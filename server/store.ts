@@ -18,7 +18,12 @@ interface DatabaseSchema {
   resources: Resource[];
 }
 
-const DATA_DIR = path.join(process.cwd(), 'data');
+// ponytail: Vercel's deployment filesystem is read-only outside /tmp, and /tmp itself
+// doesn't survive across cold starts or separate instances. This means on Vercel the
+// "database" is ephemeral per-instance. Fine for a demo/event; swap for a real DB
+// (Vercel Postgres/KV, Neon, etc.) if data needs to survive redeploys or be shared
+// across concurrent instances.
+const DATA_DIR = process.env.VERCEL ? '/tmp/data' : path.join(process.cwd(), 'data');
 const DB_FILE = path.join(DATA_DIR, 'db.json');
 
 const INITIAL_DATA: DatabaseSchema = {
@@ -480,16 +485,16 @@ const INITIAL_DATA: DatabaseSchema = {
 
 // Ensure data directory and file exist
 export function initDb(): DatabaseSchema {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
-
-  if (!fs.existsSync(DB_FILE)) {
-    fs.writeFileSync(DB_FILE, JSON.stringify(INITIAL_DATA, null, 2), 'utf-8');
-    return INITIAL_DATA;
-  }
-
   try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+
+    if (!fs.existsSync(DB_FILE)) {
+      fs.writeFileSync(DB_FILE, JSON.stringify(INITIAL_DATA, null, 2), 'utf-8');
+      return INITIAL_DATA;
+    }
+
     const raw = fs.readFileSync(DB_FILE, 'utf-8');
     const parsed = JSON.parse(raw);
     // Ensure all modules exist and merge any missing seed data for opportunities/resources
@@ -516,9 +521,10 @@ export function initDb(): DatabaseSchema {
     fs.writeFileSync(DB_FILE, JSON.stringify(parsed, null, 2), 'utf-8');
     return parsed;
   } catch (err) {
-    console.error('Failed to parse db.json, re-initializing', err);
-    fs.writeFileSync(DB_FILE, JSON.stringify(INITIAL_DATA, null, 2), 'utf-8');
-    return INITIAL_DATA;
+    // Filesystem unwritable/unreadable (e.g. read-only deployment) or db.json corrupted:
+    // fall back to in-memory seed data for this instance rather than crashing every request.
+    console.error('DB storage unavailable, using in-memory seed data for this instance', err);
+    return JSON.parse(JSON.stringify(INITIAL_DATA));
   }
 }
 
