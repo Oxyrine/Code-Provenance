@@ -1,8 +1,23 @@
 import express from 'express';
 import path from 'path';
+import crypto from 'crypto';
 import { createServer as createViteServer } from 'vite';
 import { initDb, saveDb } from './server/store.js';
 import { User, Event, Project, Announcement, Opportunity, Resource } from './src/types.js';
+
+function hashPassword(password: string): string {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = crypto.scryptSync(password, salt, 64).toString('hex');
+  return `${salt}:${hash}`;
+}
+
+function verifyPassword(password: string, stored: string): boolean {
+  const [salt, hash] = stored.split(':');
+  if (!salt || !hash) return false;
+  const candidate = crypto.scryptSync(password, salt, 64);
+  const expected = Buffer.from(hash, 'hex');
+  return candidate.length === expected.length && crypto.timingSafeEqual(candidate, expected);
+}
 
 async function startServer() {
 
@@ -17,6 +32,26 @@ async function startServer() {
 
   // Helper to sync db
   const persist = () => saveDb(db);
+
+  // ponytail: in-memory session map, tokens invalidate on server restart. Move to signed JWTs / persisted sessions if that matters.
+  const sessions = new Map<string, string>(); // token -> userId
+
+  function issueToken(userId: string): string {
+    const token = crypto.randomBytes(32).toString('hex');
+    sessions.set(token, userId);
+    return token;
+  }
+
+  function requireAuth(req: express.Request, res: express.Response): string | null {
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
+    const userId = token ? sessions.get(token) : undefined;
+    if (!userId) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return null;
+    }
+    return userId;
+  }
 
   // --- API ROUTES ---
 
@@ -45,7 +80,7 @@ async function startServer() {
         id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
         username: String(username).trim(),
         email: normalizedEmail,
-        passwordHash: String(password),
+        passwordHash: hashPassword(String(password)),
         phone: String(phone || ''),
         gender: String(gender || 'Other'),
         dob: String(dob || ''),
@@ -64,7 +99,7 @@ async function startServer() {
       persist();
 
       const { passwordHash, ...safeUser } = newUser;
-      const token = `iet_token_${newUser.id}`;
+      const token = issueToken(newUser.id);
 
       res.status(201).json({
         success: true,
@@ -88,12 +123,12 @@ async function startServer() {
       const normalizedEmail = String(email).toLowerCase().trim();
       const user = db.users.find(u => u.email.toLowerCase() === normalizedEmail);
 
-      if (!user || user.passwordHash !== String(password)) {
+      if (!user || !verifyPassword(String(password), user.passwordHash)) {
         return res.status(401).json({ success: false, message: 'Invalid credentials. Please check your email and password.' });
       }
 
       const { passwordHash, ...safeUser } = user;
-      const token = `iet_token_${user.id}`;
+      const token = issueToken(user.id);
 
       res.json({
         success: true,
@@ -108,12 +143,9 @@ async function startServer() {
 
   // Auth: Get Current User profile
   app.get('/api/auth/me', (req, res) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      return res.status(401).json({ success: false, message: 'Unauthorized' });
-    }
+    const userId = requireAuth(req, res);
+    if (!userId) return;
 
-    const userId = authHeader.replace('Bearer iet_token_', '').trim();
     const user = db.users.find(u => u.id === userId);
 
     if (!user) {
@@ -126,12 +158,9 @@ async function startServer() {
 
   // Update Profile
   app.put('/api/users/profile', (req, res) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      return res.status(401).json({ success: false, message: 'Unauthorized' });
-    }
+    const userId = requireAuth(req, res);
+    if (!userId) return;
 
-    const userId = authHeader.replace('Bearer iet_token_', '').trim();
     const userIndex = db.users.findIndex(u => u.id === userId);
 
     if (userIndex === -1) {
@@ -178,6 +207,9 @@ async function startServer() {
   });
 
   app.post('/api/events', (req, res) => {
+    const userId = requireAuth(req, res);
+    if (!userId) return;
+
     const { title, description, category, date, time, location, isVirtual, virtualLink, speaker, speakerRole, organizer, bannerUrl, maxCapacity, tags } = req.body;
 
     if (!title || !description || !date) {
@@ -213,12 +245,9 @@ async function startServer() {
   // Toggle Event Registration
   app.post('/api/events/:id/register', (req, res) => {
     const { id } = req.params;
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      return res.status(401).json({ success: false, message: 'Please login to register for events.' });
-    }
+    const userId = requireAuth(req, res);
+    if (!userId) return;
 
-    const userId = authHeader.replace('Bearer iet_token_', '').trim();
     const event = db.events.find(e => e.id === id);
 
     if (!event) {
@@ -255,12 +284,9 @@ async function startServer() {
   });
 
   app.post('/api/projects', (req, res) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      return res.status(401).json({ success: false, message: 'Please login to submit projects.' });
-    }
+    const userId = requireAuth(req, res);
+    if (!userId) return;
 
-    const userId = authHeader.replace('Bearer iet_token_', '').trim();
     const user = db.users.find(u => u.id === userId);
 
     const { title, tagline, description, domain, teamMembers, githubUrl, demoUrl, tags, imageUrl } = req.body;
@@ -297,12 +323,9 @@ async function startServer() {
   // Toggle Project Like
   app.post('/api/projects/:id/like', (req, res) => {
     const { id } = req.params;
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      return res.status(401).json({ success: false, message: 'Please login to appreciate projects.' });
-    }
+    const userId = requireAuth(req, res);
+    if (!userId) return;
 
-    const userId = authHeader.replace('Bearer iet_token_', '').trim();
     const project = db.projects.find(p => p.id === id);
 
     if (!project) {
@@ -338,10 +361,8 @@ async function startServer() {
   });
 
   app.post('/api/opportunities', (req, res) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      return res.status(401).json({ success: false, message: 'Please login to post opportunities.' });
-    }
+    const userId = requireAuth(req, res);
+    if (!userId) return;
 
     const { title, companyOrOrg, type, location, stipendOrSalary, deadline, description, applyUrl, requirements, tags, logoUrl, bannerUrl, status, timeline } = req.body;
 
@@ -381,10 +402,8 @@ async function startServer() {
   });
 
   app.post('/api/resources', (req, res) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      return res.status(401).json({ success: false, message: 'Please login to share learning resources.' });
-    }
+    const userId = requireAuth(req, res);
+    if (!userId) return;
 
     const { title, description, category, type, authorOrProvider, url, thumbnailUrl, tags, level, featured, timeline } = req.body;
 

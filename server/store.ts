@@ -1,6 +1,13 @@
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import { User, Event, Project, Announcement, Opportunity, Resource } from '../src/types.js';
+
+function hashSeedPassword(password: string): string {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = crypto.scryptSync(password, salt, 64).toString('hex');
+  return `${salt}:${hash}`;
+}
 
 interface DatabaseSchema {
   users: (User & { passwordHash: string })[];
@@ -20,7 +27,7 @@ const INITIAL_DATA: DatabaseSchema = {
       id: 'usr_demo',
       username: 'Venkat NS',
       email: 'venkatns2008@gmail.com',
-      passwordHash: 'password123',
+      passwordHash: hashSeedPassword('password123'),
       phone: '+91 98765 43210',
       gender: 'Male',
       dob: '2004-05-15',
@@ -40,7 +47,7 @@ const INITIAL_DATA: DatabaseSchema = {
       id: 'usr_sarah',
       username: 'Sarah Chen',
       email: 'sarah.chen@iet.org',
-      passwordHash: 'password123',
+      passwordHash: hashSeedPassword('password123'),
       phone: '+91 91234 56789',
       gender: 'Female',
       dob: '2003-09-21',
