@@ -107,251 +107,267 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
     }
   };
 
+  const fieldClass = "w-full pl-9 pr-3 py-2.5 bg-black/[0.03] dark:bg-white/[0.05] border-0 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:bg-black/[0.06] dark:focus:bg-white/[0.08] outline-none transition-colors";
+  const fieldClassLg = "w-full pl-10 pr-4 py-2.5 bg-black/[0.03] dark:bg-white/[0.05] border-0 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:bg-black/[0.06] dark:focus:bg-white/[0.08] outline-none transition-colors";
+
   return (
-    <div className="min-h-[calc(100vh-65px)] bg-gradient-to-br from-[#622569] via-[#4a1b50] to-[#2b0f30] py-12 px-4 flex items-center justify-center">
-      <div className="w-full max-w-xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden border border-white/20">
+    <div className="min-h-[calc(100dvh-8rem)] py-8 px-2 flex items-center justify-center">
+      <div className="w-full max-w-xl glass-shell">
+        <div className="glass-core overflow-hidden">
 
-        {/* Auth Header */}
-        <div className="bg-gradient-to-r from-[#622569] to-[#9b51e0] p-8 text-white text-center relative overflow-hidden">
-          <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none" />
-          <div className="w-12 h-12 mx-auto mb-3 bg-white/15 rounded-2xl flex items-center justify-center backdrop-blur-md">
-            <Sparkles className="w-6 h-6 text-purple-200" />
-          </div>
-          <h2 className="text-2xl font-bold font-['Poppins'] tracking-tight">IET CONNECT PORTAL</h2>
-          <p className="text-xs text-purple-100/90 mt-1">Empowering Engineers & Technology Innovators Worldwide</p>
+          {/* Auth Header */}
+          <div className="bg-gradient-to-br from-[#622569] to-[#9b51e0] p-10 text-white text-center relative overflow-hidden rounded-t-[calc(2rem-0.375rem)]">
+            <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute -left-10 -top-10 w-40 h-40 bg-emerald-300/10 rounded-full blur-2xl pointer-events-none" />
 
-          {/* Toggle Pills */}
-          <div className="mt-6 inline-flex bg-black/20 p-1 rounded-2xl border border-white/10">
-            <button
-              onClick={() => { setIsLoginView(true); setErrorMsg(null); }}
-              className={`px-6 py-2 rounded-xl text-xs font-semibold transition-all ${
-                isLoginView ? 'bg-white text-[#622569] shadow-md' : 'text-purple-100 hover:text-white'
-              }`}
-            >
-              Sign In
-            </button>
-            <button
-              onClick={() => { setIsLoginView(false); setErrorMsg(null); }}
-              className={`px-6 py-2 rounded-xl text-xs font-semibold transition-all ${
-                !isLoginView ? 'bg-white text-[#622569] shadow-md' : 'text-purple-100 hover:text-white'
-              }`}
-            >
-              Register
-            </button>
-          </div>
-        </div>
-
-        {/* Form Container */}
-        <div className="p-8">
-          {errorMsg && (
-            <div className="mb-6 p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs font-medium flex items-start gap-3">
-              <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
-              <span>{errorMsg}</span>
+            <span className="eyebrow bg-white/15 text-purple-100 relative z-10">Member Portal</span>
+            <div className="w-11 h-11 mx-auto my-4 bg-white/15 rounded-2xl flex items-center justify-center backdrop-blur-md relative z-10">
+              <Sparkles className="w-5 h-5 text-purple-100" strokeWidth={1.5} />
             </div>
-          )}
+            <h2 className="text-2xl font-display font-semibold tracking-tight relative z-10">IET CONNECT</h2>
+            <p className="text-xs text-purple-100/80 mt-1.5 relative z-10">Empowering Engineers & Technology Innovators Worldwide</p>
 
-          {isLoginView ? (
-            /* LOGIN FORM */
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Email Address</label>
-                <div className="relative">
-                  <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
-                  <input
-                    type="email"
-                    required
-                    value={loginEmail}
-                    onChange={(e) => setLoginEmail(e.target.value)}
-                    placeholder="email@example.com"
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:border-[#9b51e0] focus:ring-2 focus:ring-[#9b51e0]/20 outline-none transition-all"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Password</label>
-                <div className="relative">
-                  <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
-                  <input
-                    type="password"
-                    required
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:border-[#9b51e0] focus:ring-2 focus:ring-[#9b51e0]/20 outline-none transition-all"
-                  />
-                </div>
-              </div>
-
+            {/* Toggle Pills */}
+            <div className="mt-7 inline-flex bg-black/20 p-1 rounded-full relative z-10">
               <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3 px-4 bg-[#622569] hover:bg-[#9b51e0] active:scale-[0.99] text-white font-semibold text-sm rounded-xl shadow-lg shadow-purple-900/20 transition-all flex items-center justify-center gap-2 mt-2"
+                onClick={() => { setIsLoginView(true); setErrorMsg(null); }}
+                className={`px-6 py-2 rounded-full text-xs font-semibold transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+                  isLoginView ? 'bg-white text-[#622569] shadow-md' : 'text-purple-100 hover:text-white'
+                }`}
               >
-                {loading ? 'Authenticating...' : 'Access Portal'}
-                {!loading && <ArrowRight className="w-4 h-4" />}
+                Sign In
               </button>
+              <button
+                onClick={() => { setIsLoginView(false); setErrorMsg(null); }}
+                className={`px-6 py-2 rounded-full text-xs font-semibold transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+                  !isLoginView ? 'bg-white text-[#622569] shadow-md' : 'text-purple-100 hover:text-white'
+                }`}
+              >
+                Register
+              </button>
+            </div>
+          </div>
 
-              {/* Demo Accounts Box */}
-              <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 text-center">
-                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mb-3">Quick Demo Login (Pre-configured Users)</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleQuickDemoLogin('venkatns2008@gmail.com')}
-                    className="py-2 px-3 bg-purple-50 dark:bg-purple-500/10 hover:bg-purple-100 dark:hover:bg-purple-500/20 text-[#622569] dark:text-purple-300 text-xs font-medium rounded-xl border border-purple-200 dark:border-purple-800 transition-colors"
-                  >
-                    Login as Chapter Lead
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleQuickDemoLogin('sarah.chen@iet.org')}
-                    className="py-2 px-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-medium rounded-xl border border-slate-200 dark:border-slate-700 transition-colors"
-                  >
-                    Login as Student Member
-                  </button>
-                </div>
+          {/* Form Container */}
+          <div className="p-8">
+            {errorMsg && (
+              <div className="mb-6 p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200/60 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 text-xs font-medium flex items-start gap-3">
+                <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" strokeWidth={1.5} />
+                <span>{errorMsg}</span>
               </div>
-            </form>
-          ) : (
-            /* REGISTRATION FORM */
-            <form onSubmit={handleRegister} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Username *</label>
-                  <div className="relative">
-                    <UserIcon className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-                    <input
-                      type="text"
-                      required
-                      value={regData.username}
-                      onChange={(e) => setRegData({ ...regData, username: e.target.value })}
-                      placeholder="John Doe"
-                      className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:border-[#9b51e0] outline-none"
-                    />
-                  </div>
-                </div>
+            )}
 
+            {isLoginView ? (
+              /* LOGIN FORM */
+              <form onSubmit={handleLogin} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Email *</label>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Email Address</label>
                   <div className="relative">
-                    <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                    <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" strokeWidth={1.5} />
                     <input
                       type="email"
                       required
-                      value={regData.email}
-                      onChange={(e) => setRegData({ ...regData, email: e.target.value })}
-                      placeholder="john@example.com"
-                      className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:border-[#9b51e0] outline-none"
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      placeholder="email@example.com"
+                      className={fieldClassLg}
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Password *</label>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Password</label>
                   <div className="relative">
-                    <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                    <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" strokeWidth={1.5} />
                     <input
                       type="password"
                       required
-                      value={regData.password}
-                      onChange={(e) => setRegData({ ...regData, password: e.target.value })}
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:border-[#9b51e0] outline-none"
+                      className={fieldClassLg}
                     />
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Phone Number</label>
-                  <div className="flex gap-1.5">
-                    <select
-                      value={regData.countryCode}
-                      onChange={(e) => setRegData({ ...regData, countryCode: e.target.value })}
-                      className="w-24 shrink-0 px-1.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:border-[#9b51e0] outline-none"
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="cta-pill w-full justify-center bg-[#622569] hover:bg-[#7a2f83] text-white group mt-2"
+                >
+                  <span>{loading ? 'Authenticating...' : 'Access Portal'}</span>
+                  {!loading && (
+                    <span className="cta-icon bg-white/15">
+                      <ArrowRight className="w-3.5 h-3.5" strokeWidth={1.5} />
+                    </span>
+                  )}
+                </button>
+
+                {/* Demo Accounts Box */}
+                <div className="mt-8 pt-6 border-t border-black/5 dark:border-white/10 text-center">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mb-3">Quick Demo Login (Pre-configured Users)</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleQuickDemoLogin('venkatns2008@gmail.com')}
+                      className="py-2.5 px-3 bg-purple-50 dark:bg-purple-500/10 hover:bg-purple-100 dark:hover:bg-purple-500/20 text-[#622569] dark:text-purple-300 text-xs font-medium rounded-xl transition-colors"
                     >
-                      {COUNTRY_CODES.map((c) => (
-                        <option key={c.code} value={c.code}>{c.code} {c.country}</option>
-                      ))}
-                    </select>
-                    <div className="relative flex-1">
-                      <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                      Login as Chapter Lead
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleQuickDemoLogin('sarah.chen@iet.org')}
+                      className="py-2.5 px-3 bg-black/[0.03] dark:bg-white/[0.05] hover:bg-black/[0.06] dark:hover:bg-white/[0.08] text-slate-700 dark:text-slate-300 text-xs font-medium rounded-xl transition-colors"
+                    >
+                      Login as Student Member
+                    </button>
+                  </div>
+                </div>
+              </form>
+            ) : (
+              /* REGISTRATION FORM */
+              <form onSubmit={handleRegister} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Username *</label>
+                    <div className="relative">
+                      <UserIcon className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" strokeWidth={1.5} />
                       <input
-                        type="tel"
-                        value={regData.localNumber}
-                        onChange={(e) => setRegData({ ...regData, localNumber: e.target.value.replace(/[^\d]/g, '') })}
-                        placeholder="98765 43210"
-                        className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:border-[#9b51e0] outline-none"
+                        type="text"
+                        required
+                        value={regData.username}
+                        onChange={(e) => setRegData({ ...regData, username: e.target.value })}
+                        placeholder="John Doe"
+                        className={fieldClass}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Email *</label>
+                    <div className="relative">
+                      <Mail className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" strokeWidth={1.5} />
+                      <input
+                        type="email"
+                        required
+                        value={regData.email}
+                        onChange={(e) => setRegData({ ...regData, email: e.target.value })}
+                        placeholder="john@example.com"
+                        className={fieldClass}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Password *</label>
+                    <div className="relative">
+                      <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" strokeWidth={1.5} />
+                      <input
+                        type="password"
+                        required
+                        value={regData.password}
+                        onChange={(e) => setRegData({ ...regData, password: e.target.value })}
+                        placeholder="••••••••"
+                        className={fieldClass}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Phone Number</label>
+                    <div className="flex gap-1.5">
+                      <select
+                        value={regData.countryCode}
+                        onChange={(e) => setRegData({ ...regData, countryCode: e.target.value })}
+                        className="w-24 shrink-0 px-1.5 py-2.5 bg-black/[0.03] dark:bg-white/[0.05] border-0 rounded-xl text-xs text-slate-900 dark:text-slate-100 outline-none"
+                      >
+                        {COUNTRY_CODES.map((c) => (
+                          <option key={c.code} value={c.code}>{c.code} {c.country}</option>
+                        ))}
+                      </select>
+                      <div className="relative flex-1">
+                        <Phone className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" strokeWidth={1.5} />
+                        <input
+                          type="tel"
+                          value={regData.localNumber}
+                          onChange={(e) => setRegData({ ...regData, localNumber: e.target.value.replace(/[^\d]/g, '') })}
+                          placeholder="98765 43210"
+                          className={fieldClass}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Gender</label>
+                    <select
+                      value={regData.gender}
+                      onChange={(e) => setRegData({ ...regData, gender: e.target.value })}
+                      className="w-full px-3 py-2.5 bg-black/[0.03] dark:bg-white/[0.05] border-0 rounded-xl text-xs text-slate-900 dark:text-slate-100 outline-none"
+                    >
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Date of Birth</label>
+                    <div className="relative">
+                      <Calendar className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" strokeWidth={1.5} />
+                      <input
+                        type="date"
+                        value={regData.dob}
+                        onChange={(e) => setRegData({ ...regData, dob: e.target.value })}
+                        className={fieldClass}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">City</label>
+                    <div className="relative">
+                      <MapPin className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" strokeWidth={1.5} />
+                      <input
+                        type="text"
+                        value={regData.city}
+                        onChange={(e) => setRegData({ ...regData, city: e.target.value })}
+                        placeholder="Chennai"
+                        className={fieldClass}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Institution / Campus</label>
+                    <div className="relative">
+                      <Building className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" strokeWidth={1.5} />
+                      <input
+                        type="text"
+                        value={regData.institution}
+                        onChange={(e) => setRegData({ ...regData, institution: e.target.value })}
+                        placeholder="SRM / RVCE / Anna Univ"
+                        className={fieldClass}
                       />
                     </div>
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Gender</label>
-                  <select
-                    value={regData.gender}
-                    onChange={(e) => setRegData({ ...regData, gender: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:border-[#9b51e0] outline-none"
-                  >
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Date of Birth</label>
-                  <div className="relative">
-                    <Calendar className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-                    <input
-                      type="date"
-                      value={regData.dob}
-                      onChange={(e) => setRegData({ ...regData, dob: e.target.value })}
-                      className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:border-[#9b51e0] outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">City</label>
-                  <div className="relative">
-                    <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-                    <input
-                      type="text"
-                      value={regData.city}
-                      onChange={(e) => setRegData({ ...regData, city: e.target.value })}
-                      placeholder="Chennai"
-                      className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:border-[#9b51e0] outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Institution / Campus</label>
-                  <div className="relative">
-                    <Building className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-                    <input
-                      type="text"
-                      value={regData.institution}
-                      onChange={(e) => setRegData({ ...regData, institution: e.target.value })}
-                      placeholder="SRM / RVCE / Anna Univ"
-                      className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:border-[#9b51e0] outline-none"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3 px-4 bg-[#622569] hover:bg-[#9b51e0] text-white font-semibold text-sm rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 mt-4"
-              >
-                {loading ? 'Creating Member Record...' : 'Register Account'}
-                {!loading && <UserCheck className="w-4 h-4" />}
-              </button>
-            </form>
-          )}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="cta-pill w-full justify-center bg-[#622569] hover:bg-[#7a2f83] text-white group mt-4"
+                >
+                  <span>{loading ? 'Creating Member Record...' : 'Register Account'}</span>
+                  {!loading && (
+                    <span className="cta-icon bg-white/15">
+                      <UserCheck className="w-3.5 h-3.5" strokeWidth={1.5} />
+                    </span>
+                  )}
+                </button>
+              </form>
+            )}
+          </div>
         </div>
       </div>
     </div>

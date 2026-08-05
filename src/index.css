@@ -1,6 +1,11 @@
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 
+@theme {
+  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
@@ -16,6 +21,16 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes slideRight {
+  from { opacity: 0; transform: translateX(-16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fadeUpBlur {
+  from { opacity: 0; transform: translateY(48px); filter: blur(6px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
 .animate-fadeIn {
   animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
@@ -26,4 +41,132 @@
 
 .animate-slideUp {
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slideRight {
+  animation: slideRight 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+/* Design system: Ethereal Glass (dark) / Soft Structuralism (light), Double-Bezel cards */
+
+.reveal {
+  opacity: 0;
+}
+
+.reveal.is-visible {
+  animation: fadeUpBlur 900ms cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+.glass-shell {
+  position: relative;
+  border-radius: 2rem;
+  padding: 0.375rem;
+  background-color: rgb(0 0 0 / 0.03);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.06);
+}
+
+.dark .glass-shell {
+  background-color: rgb(255 255 255 / 0.04);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+}
+
+.glass-core {
+  position: relative;
+  border-radius: calc(2rem - 0.375rem);
+  background-color: #ffffff;
+  box-shadow: inset 0 1px 1px rgb(255 255 255 / 0.6), 0 20px 40px -24px rgb(15 15 20 / 0.18);
+}
+
+.dark .glass-core {
+  background-color: #0a0a0d;
+  box-shadow: inset 0 1px 1px rgb(255 255 255 / 0.06), 0 20px 40px -20px rgb(0 0 0 / 0.6);
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 0.3rem 0.85rem;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-weight: 600;
+}
+
+.cta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 9999px;
+  padding: 0.5rem 0.5rem 0.5rem 1.5rem;
+  font-weight: 600;
+  font-size: 0.8rem;
+  transition: transform 700ms cubic-bezier(0.32, 0.72, 0, 1), background-color 700ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.cta-pill:active {
+  transform: scale(0.98);
+}
+
+.cta-icon {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 700ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.group:hover .cta-icon {
+  transform: translate(0.15rem, -0.1rem) scale(1.05);
+}
+
+.mesh-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.mesh-bg::before,
+.mesh-bg::after {
+  content: '';
+  position: absolute;
+  width: 60vw;
+  height: 60vw;
+  border-radius: 9999px;
+  filter: blur(120px);
+  opacity: 0.15;
+}
+
+.mesh-bg::before {
+  top: -20vw;
+  left: -10vw;
+  background: radial-gradient(circle, #9b51e0, transparent 70%);
+}
+
+.mesh-bg::after {
+  bottom: -25vw;
+  right: -15vw;
+  background: radial-gradient(circle, #34d399, transparent 70%);
+}
+
+.dark .mesh-bg::before,
+.dark .mesh-bg::after {
+  opacity: 0.22;
+}
+
+.grain-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.dark .grain-overlay {
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }

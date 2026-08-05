@@ -246,9 +246,9 @@ export default function App() {
   if (authChecking) {
     return (
       <div className={darkMode ? 'dark' : ''}>
-        <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center text-white p-4">
-          <Loader2 className="w-8 h-8 text-[#9b51e0] animate-spin mb-3" />
-          <p className="text-sm font-semibold tracking-wide font-['Poppins']">Connecting to IET Portal Backend...</p>
+        <div className="min-h-[100dvh] bg-[#050505] flex flex-col items-center justify-center text-white p-4">
+          <Loader2 className="w-7 h-7 text-[#9b51e0] animate-spin mb-3" strokeWidth={1.5} />
+          <p className="text-sm font-medium tracking-wide font-display">Connecting to IET Portal Backend...</p>
         </div>
       </div>
     );
@@ -256,7 +256,9 @@ export default function App() {
 
   return (
     <div className={darkMode ? 'dark' : ''}>
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col text-slate-900 dark:text-slate-100 font-sans overflow-x-hidden transition-colors">
+      <div className="relative min-h-[100dvh] bg-[#f8f7f9] dark:bg-[#050505] flex flex-col text-slate-900 dark:text-slate-100 font-sans overflow-x-hidden transition-colors">
+        <div className="mesh-bg" aria-hidden="true" />
+        <div className="grain-overlay" aria-hidden="true" />
 
         {/* Navbar */}
         <Navbar
@@ -369,13 +371,15 @@ export default function App() {
 
         {/* Toast Notification Popup */}
         {toast && (
-          <div className="fixed bottom-6 right-6 z-50 bg-slate-900 dark:bg-slate-800 text-white px-4 py-3 rounded-2xl shadow-2xl border border-slate-700 flex items-center gap-3 animate-slideUp">
-            {toast.type === 'success' ? (
-              <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
-            ) : (
-              <AlertCircle className="w-5 h-5 text-rose-400 shrink-0" />
-            )}
-            <span className="text-xs font-semibold">{toast.message}</span>
+          <div className="fixed bottom-6 right-6 z-50 glass-shell animate-slideUp">
+            <div className="glass-core !bg-[#111114] px-4 py-3 flex items-center gap-3 text-white">
+              {toast.type === 'success' ? (
+                <CheckCircle className="w-4.5 h-4.5 text-emerald-400 shrink-0" strokeWidth={1.5} />
+              ) : (
+                <AlertCircle className="w-4.5 h-4.5 text-rose-400 shrink-0" strokeWidth={1.5} />
+              )}
+              <span className="text-xs font-medium">{toast.message}</span>
+            </div>
           </div>
         )}
       </div>
