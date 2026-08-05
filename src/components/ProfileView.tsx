@@ -81,16 +81,18 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateProfile 
             </div>
 
             {/* Info Grid */}
-            <div className="px-6 sm:px-10 pb-10 relative pt-0">
-              <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 -mt-10 sm:-mt-12 mb-8">
-                <div className="flex items-end gap-5">
-                  <img
-                    src={user.avatarUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'}
-                    alt={user.username}
-                    className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl object-cover border-4 border-white dark:border-[#0a0a0d] shadow-md bg-white shrink-0"
-                    referrerPolicy="no-referrer"
-                  />
-                  <div className="pb-1">
+            <div className="px-6 sm:px-10 pb-10 relative">
+              <div className="flex flex-col sm:flex-row items-start justify-between gap-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 sm:gap-6">
+                  <div className="-mt-12 sm:-mt-16 shrink-0 relative z-10">
+                    <img
+                      src={user.avatarUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'}
+                      alt={user.username}
+                      className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl object-cover border-4 border-white dark:border-[#0a0a0d] shadow-md bg-white"
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
+                  <div className="pt-2 sm:pt-6">
                     <div className="flex items-center gap-2">
                       <h1 className="text-2xl sm:text-3xl font-display font-semibold text-slate-900 dark:text-white tracking-tight">{user.username}</h1>
                       {user.role === 'lead' && (
@@ -103,15 +105,17 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateProfile 
                   </div>
                 </div>
 
-                <button
-                  onClick={() => { setIsEditing(!isEditing); setErrorMsg(null); }}
-                  className="cta-pill bg-[#622569] hover:bg-[#7a2f83] text-white group"
-                >
-                  <span>{isEditing ? 'Cancel Edit' : 'Edit Profile'}</span>
-                  <span className="cta-icon bg-white/15">
-                    <Edit3 className="w-3.5 h-3.5" strokeWidth={1.5} />
-                  </span>
-                </button>
+                <div className="pt-0 sm:pt-6 shrink-0">
+                  <button
+                    onClick={() => { setIsEditing(!isEditing); setErrorMsg(null); }}
+                    className="cta-pill bg-[#622569] hover:bg-[#7a2f83] text-white group"
+                  >
+                    <span>{isEditing ? 'Cancel Edit' : 'Edit Profile'}</span>
+                    <span className="cta-icon bg-white/15">
+                      <Edit3 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                    </span>
+                  </button>
+                </div>
               </div>
 
               {/* EDIT FORM or READ-ONLY VIEW */}
