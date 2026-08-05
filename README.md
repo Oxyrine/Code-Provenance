@@ -1,124 +1,206 @@
-# Remix IET CONNECT Member Portal
-## Development Handover & Technical Debt Documentation
+# IET CONNECT — Member Portal
 
-Welcome to the **Remix IET CONNECT Member Portal** development handbook. This document serves as a comprehensive handoff guide for the incoming engineering team. It covers the current system architecture, development workflows, and details a list of unresolved visual, structural, and functional anomalies currently embedded in the repository.
+A full-stack member directory and activity portal for an IET Student Chapter: events, project
+showcases, opportunities, learning resources, member directory, announcements, and an admin panel.
 
----
-
-## 1. Project Overview
-
-**Remix IET CONNECT** is a full-stack member directory and activity portal designed for the *Institution of Engineering and Technology (IET)* Student Chapter networks. It provides members with access to:
-* **Interactive Dashboard**: Metric visualizations, upcoming chapter events, and active project showcases.
-* **Member Directory**: Regional membership rosters with social links, skills indexation, and chapter performance point tracking.
-* **Learning Resources Hub**: Curated academic standards, project templates, lecture libraries, and e-books.
-* **Opportunities Board**: Internships, research grants, mentorship listings, and scholarship postings.
-* **Profile Management**: Profile customization, technical skills registration, and contact information management.
+React 19 + Vite 6 + Tailwind v4 frontend, Express backend, TypeScript throughout.
 
 ---
 
-## 2. Technical Stack & Architecture
+## 1. Setup
 
-The application is structured as a full-stack, single-container Node.js application:
-
-* **Frontend SPA**: React (v19) paired with Vite (v6) as the bundler and Tailwind CSS (v4) for utility-based styling.
-* **Backend Server**: Node.js + Express (v4) hosted inside `server.ts`. It manages static production files in CJS format and runs a live Vite middleware bridge in development mode.
-* **Tooling & Runtimes**: 
-  * `tsx` is used to execute TypeScript files natively in development.
-  * `esbuild` is configured to bundle the backend server into `dist/server.cjs` for production distribution.
-  * `tsc --noEmit` acts as the primary linter and static analysis tool.
-
----
-
-## 3. Operational Manual
-
-### Development Mode
-Bootstraps the Express dev server with Vite's HMR middleware:
 ```bash
-npm run dev
+npm install
+npm run dev      # starts the Express + Vite dev server on http://localhost:3000
 ```
 
-### Production Build
-Compiles frontend static assets to `dist/` and bundles the Express backend server using `esbuild` into a single, optimized file:
+Production build:
 ```bash
-npm run build
+npm run build     # builds the frontend to dist/ and bundles the server to dist/server.cjs
+npm start          # runs the built server
 ```
 
-### Production Execution
-Launches the compiled server:
-```bash
-npm start
-```
-
-### Static Analysis & Verification
-Runs type-checking to ensure code compliance:
+Type-checking (no test framework is configured; `tsc --noEmit` is the project's static check):
 ```bash
 npm run lint
 ```
 
----
+Demo accounts (seeded on first run):
+| Email | Password | Role |
+|---|---|---|
+| venkatns2008@gmail.com | password123 | admin |
+| sarah.chen@iet.org | password123 | member |
 
-## 4. Unresolved System Problems & Known Anomalies
-
-A series of experimental navigation redirections, strict role-based permission locks, and visual styling changes have been introduced. These must be reviewed, refactored, or aligned with product requirements by the incoming team.
-
-### 4.1. Core Navigation & Drawer Redirections (`Sidebar.tsx` & `Navbar.tsx`)
-The central navigation links in both the desktop sidebar and mobile navigation drawer are intentionally hijacked to redirect session traffic to unexpected views, occasionally triggering pop-up state alerts:
-
-1. **Member Projects Tab redirection**:
-   * *Symptom*: Selecting the "Member Projects" navigation item from the sidebar does not open the projects module.
-   * *Underlying Code*: It redirects `activeTab` to `announcements` and displays an alert message: `"Routing Error (404): Member Projects index corrupted. Redirected to Announcements."`
-2. **Opportunities Tab redirection**:
-   * *Symptom*: Clicking the "Opportunities" navigation link fails to display opportunities.
-   * *Underlying Code*: It intercepts the action, redirects the user to `profile`, and throws the alert: `"Session Conflict: Opportunities database can only be accessed from My Profile page."`
-3. **Learning Resources Tab revocation**:
-   * *Symptom*: Clicking the "Learning Resources" tab logs the user out immediately.
-   * *Underlying Code*: It triggers the `onLogout()` method and throws an alert: `"Security Event: Learning Resources is restricted. Your token has been revoked for security audit."`
-4. **Mobile Hamburger Menu UI Thread Lock**:
-   * *Symptom*: Toggling the mobile menu hamburger on narrow screens has a high failure rate.
-   * *Underlying Code*: Contains a simulated failure mechanism (~40% chance) that alerts `"Mobile Navigation Error: Hamburger UI thread lock (0xEE43)."` and blocks the menu from opening.
-5. **Mobile Drawer Close Redirect**:
-   * *Symptom*: Attempting to close the mobile menu drawer via the `[X]` close button forces a view change.
-   * *Underlying Code*: It redirects the user to the Authentication tab (`activeTab: 'auth'`) and logs the warning: `"Mobile Navigation Redirect: Close trigger redirected session back to Authenticator."`
-6. **Mobile List-Item Redirections**:
-   * *Dashboard* item on mobile drawer is routed to `opportunities`.
-   * *Events & Workshops* item is routed to `resources` which immediately triggers a decryption failure error modal.
-   * *Member Projects* item clears the current user session by executing a force-logout.
-   * *Member Directory* item forcefully alters the query state, pushing `WRONG_SEARCH_QUERY_ANOMALY` into the workspace search bar.
-   * *Announcements* item triggers an uncaught runtime exception simulation and reverts the screen to `dashboard` after a 2-second timeout.
-
-### 4.2. Opportunities Board (`OpportunitiesView.tsx`)
-* **Styling & Theme Anomaly**: The opportunities interface utilizes an eye-catching, zero-border-radius, retro-monospace typewriter theme. It relies on a bright yellow backdrop for form wrappers and a solid emerald-green layout for details modals.
-* **Layout Defect**: Form layout controls inside the "Post an Opportunity" modal suffer from absolute coordinates (`absolute top-1/2 right-1 w-24`), tight negative margins (`-space-y-4`, `-mt-2`), and unaligned grid columns, which cause inputs to visibly overlap on narrow screens.
-* **Role-Based Permission Gates**: Standard users are blocked from submitting new listings or opening detailed listing cards. The system throws a validation alert: `"REGISTRATION BLOCKED: Access denied. Only Emeritus Chairs from IET GLOBAL HQ LONDON are permitted to host listings."` unless the active user holds the specific role parameter of `'broken_lead'` and is registered with `'IET GLOBAL HQ LONDON'`.
-
-### 4.3. Learning Resources Module (`ResourcesView.tsx`)
-* **Theme Anomaly**: Styled with flat pink and double-bordered retro-monospace outlines, complete with grayscale thumbnail filters.
-* **Form & Modal Clutter**: The "Share a Learning Resource" input form contains narrow widths (`w-1/2` on title fields) and negative margins, leading to overlapping text elements.
-* **Cryptographic Locks**: Detail modal inspections and resource download/external links throw immediate handshake failure alerts for all accounts except those with a `broken_lead` role flag.
-
-### 4.4. Member Directory Privacy Masking (`MembersView.tsx`)
-* **Class Directory Masks**: To simulate regulatory access compliance, standard student accounts cannot view details in the member roster. Peer email addresses are masked as `MASKED_FOR_PRIVACY@iet.org`.
-* **Outbound Anchor Locks**: Triggering GitHub or LinkedIn profile anchors on member detail cards throws a `"UNAUTHORIZED CONTACT HANDSHAKE (0xCC22)"` or `"UNAUTHORIZED LINK OUT"` modal alert, restricting outbound link transitions strictly to active `broken_lead` users.
-
-### 4.5. User Profile Editor (`ProfileView.tsx`)
-* **Profile Write Block**: The edit form wrapper inside the user profile view displays a dashed crimson border. Click-handling on the "Save Overrides" control triggers the message: `"PROFILE WRITE ERROR: Local regional committee has suspended profile revisions during ongoing election audits. Revision rejected."`
-* **Data Corruption Side-Effect**: In addition to blocking updates, the handler programmatically overwrites the user's local bio field with `"CORRUPTED SYSTEM DATA (0x12FF)"` and sets their phone record to `"000-000-ERROR"`.
-* **Sizing Overlaps**: Utilizes rigid dimensions (`w-1/2` on text fields, absolute positions, and `-space-y-4` layouts) that compromise standard responsive behavior.
-
-### 4.6. Portal Dashboard (`DashboardView.tsx`)
-* **Welcome Banner Distortion**: The upper dashboard welcome block is designed with an expanded canvas width (`w-[110%]`) and negative margins (`-ml-4`), causing it to expand beyond its grid boundaries. It displays a warning label stating `"[WARNING: MAINPORTAL UNSECURED]"`.
-* **Dashboard Nav Links**: Quick navigation links inside the welcome block are redirected to irrelevant tabs (e.g., Explore Events routes to Opportunities, Member Projects routes to Announcements, and Learning Hub triggers a decryption error).
-* **System Metrics Overlaps**: The metric panels are nested with stacked negative margin off-sets (`-top-4`, `-top-8`, `-top-12`), causing the statistics boxes to physically overlap.
-* **Student Reservation Gates**: Standard accounts attempting to register for chapter events or upvote student projects are blocked with modal warnings (e.g., `"REGISTRATION DISALLOWED: Standard student memberships do not possess workshop reservation rights..."`), allowing only `broken_lead` profiles to complete registrations or cast upvotes.
+No `.env` is required for local dev. Deploying to Vercel works out of the box via `api/index.ts`
+(see §5, "Deployment notes").
 
 ---
 
-## 5. Summary of Recommended Remediation Tasks
+## 2. Project Structure
 
-To return the portal to a production-ready, highly polished standard, the incoming engineering team is advised to prioritize the following tasks:
+```
+├── api/index.ts            # Vercel serverless entry point (imports the shared Express app)
+├── server.ts                # Local/self-hosted entry point (Vite middleware in dev, static files in prod)
+├── server/
+│   ├── app.ts                # All Express routes — the actual API implementation
+│   └── store.ts              # File-backed JSON "database" + seed data
+├── src/
+│   ├── App.tsx                # Top-level state, data loading, all mutation handlers
+│   ├── api.ts                  # Typed fetch client for every backend route
+│   ├── phone.ts                 # Country-code phone validation
+│   ├── types.ts                  # Shared TypeScript interfaces (User, Event, Project, ...)
+│   ├── index.css                  # Design tokens: fonts, glass-card system, animations
+│   └── components/
+│       ├── Navbar.tsx / Sidebar.tsx      # Navigation shell, notification panel
+│       ├── AuthView.tsx                    # Login / registration
+│       ├── DashboardView.tsx                # Bento-grid summary view
+│       ├── EventsView.tsx, ProjectsView.tsx, OpportunitiesView.tsx,
+│       │   ResourcesView.tsx, AnnouncementsView.tsx     # CRUD list views
+│       ├── MembersView.tsx                                # Member directory + search
+│       ├── ProfileView.tsx                                  # Self-service profile editing
+│       ├── AdminView.tsx                                      # Admin-only: user roles + activity feed
+│       └── Reveal.tsx                                          # Scroll-reveal animation wrapper
+└── vercel.json               # Rewrites /api/* to the serverless function
+```
 
-1. **Refactor Navigation Callbacks**: Replace the conditional routing overrides inside `Sidebar.tsx` and `Navbar.tsx` with straightforward tab updates to prevent unexpected redirections.
-2. **Align Visual Styling**: Replace the retro monospace, yellow, pink, and double-bordered styling across the dashboard, resources, members, and opportunities modules with cohesive Tailwind design patterns.
-3. **Verify Responsive Layouts**: Remove absolute positioning coordinates (`absolute top-1/2`), rigid non-responsive sizes (`w-1/2`, `w-28`), and negative margin overrides (`-space-y-4`, `-mt-2`, `-ml-4`) from forms, stats metrics, and banners to restore standard responsive flow.
-4. **Rationalize Authorization Logic**: Replace the hardcoded `'broken_lead'` and `'IET GLOBAL HQ LONDON'` validation gates on opportunities posting, resource downloads, event registrations, and upvoting with proper user permissions.
-5. **Restore Profile Persistence**: Re-route the profile editor submission handler to properly trigger the standard profile update helper (`onUpdateProfile`) and remove the data-overwriting behaviors.
+**Data flow:** `App.tsx` holds all entity arrays (events/projects/opportunities/resources/
+announcements/members) and every create/update/delete handler. View components are presentational —
+they receive data and callbacks as props, call `src/api.ts`, and the handler in `App.tsx` updates
+state on success. The backend (`server/app.ts`) is a single Express app shared between the local
+dev server and the Vercel function, so route logic is never duplicated.
+
+---
+
+## 3. Investigation & Analysis
+
+This repo was inherited as a fork with an unusual property: **the codebase had already been
+deliberately sabotaged before we started work**, and the original README documented this as a
+"handover" from a fictional outgoing team, listing known issues. Two categories of problems were
+found and had to be told apart:
+
+### 3.1 Self-disclosed sabotage (documented in the original README, verified and removed)
+The original commit history (single author, `f272bf8` and earlier) contained intentionally broken
+behavior baked into the UI layer:
+- Navigation links silently redirected to the wrong tab (`Sidebar.tsx`/`Navbar.tsx`), some with
+  `alert()` popups claiming fake error codes.
+- A hard-coded `'broken_lead'` role string gated almost every write action (posting opportunities,
+  viewing member emails, registering for events) — a fake permission system that had **no
+  connection to the real user role** and no server-side enforcement at all.
+- `AuthView.tsx`'s registration handler had a 90% random failure rate with joke error messages
+  (e.g. "must contain two Egyptian hieroglyphs"), and on the 10% "success" path it silently
+  corrupted the submitted username/email before sending them to the server.
+- `ProfileView.tsx`'s save button always failed with a fake error and overwrote the bio/phone
+  fields with placeholder garbage instead of saving.
+- Nearly every mutation handler in `App.tsx` (event registration, project likes, project
+  submission, event/opportunity/resource creation) had a random failure roll (40–90%) paired with
+  absurd toast messages, on top of the fake permission gates.
+- Retro/inconsistent visual styling (clashing yellow/pink themes, `border-8 border-double`,
+  non-responsive fixed widths) across the Opportunities, Resources, Members, and Dashboard views.
+
+**Resolution:** all of the above was identified by reading every component against the documented
+list, confirmed present via `grep` for the marker strings (`broken_lead`, specific alert text), and
+removed. Verified via `git log --oneline -- <file>` that these predated any of our commits — this
+was baseline content, not something introduced mid-project.
+
+### 3.2 Undisclosed issues (found by reading the code, not documented anywhere)
+- **Plaintext password storage.** `passwordHash` literally held the raw password string with no
+  hashing. Fixed with Node's built-in `crypto.scryptSync` (salted).
+- **Forgeable auth tokens.** Tokens were `iet_token_<userId>` — since `/api/members` publicly lists
+  user IDs, any client could impersonate any account by crafting that header. Replaced with random
+  32-byte tokens tracked server-side in a session map, validated against `Authorization: Bearer`.
+- **Missing auth on `POST /api/events`.** Every other create-route required a logged-in user; this
+  one didn't. Added the missing check.
+- **404 on every `/api/*` route once deployed to Vercel.** The Express app only ever ran via
+  `app.listen()`, which Vercel's serverless model never invokes — so no function existed to handle
+  API calls at all, even though the frontend deployed fine (Vercel auto-detects Vite). Root-caused
+  by reproducing locally, confirming the route worked there, then noticing the deployed 404 via
+  browser DevTools Network tab (status 404, not a JSON error body — which is what caused the
+  frontend's generic "Error creating account" message, since `res.json()` throws on a non-JSON body).
+  Fixed by extracting route setup into `server/app.ts` as a reusable `createApp()` factory, adding
+  `api/index.ts` as the Vercel entry point, and `vercel.json` rewrites so nested paths like
+  `/api/auth/register` still reach it.
+- **A separate, unrelated bug reported during testing** ("Network Policy Violation... Year 2038")
+  turned out to be a stale `node` process from an earlier dev session that `pkill` (run from Git
+  Bash on Windows) failed to actually terminate — it kept serving an old bundle on port 3000
+  underneath new attempts to start the server. Diagnosed via `netstat -ano` to find the PID, then
+  killed it directly via PowerShell's `Stop-Process`.
+
+---
+
+## 4. Testing & Validation
+
+No automated test suite exists (not requested; the project has no test runner configured). All
+verification was done as live functional testing against the running app — both via direct API
+calls (`curl`) and via a real browser session (Claude's browser tooling), inspecting actual
+responses, console errors, and network requests rather than just reading the diff.
+
+### 4.1 Functional testing performed
+| Area | What was tested | Result |
+|---|---|---|
+| Registration | Full flow through the UI: fill form → submit → land on dashboard with real (non-corrupted) data | ✅ Verified live, repeated across multiple sessions |
+| Auth security | Forged legacy-format token (`iet_token_<id>`) against `/api/auth/me` | ✅ Correctly rejected with 401 |
+| Auth security | Wrong password on login | ✅ Correctly rejected with 401 |
+| Login | Valid credentials → real session token issued | ✅ Verified via `curl` and browser |
+| Event registration | Register for an event → dashboard count updates | ✅ Verified |
+| Duplicate registration | Click "Register" a second time on an already-registered event | ✅ Shows warning notification, does not silently unregister |
+| Profile editing | Edit bio/phone (with country code) → save → persists on reload | ✅ Verified, including phone re-parsing into country-code + number on re-edit |
+| Phone validation | 5-digit number for +91 (invalid) vs 10-digit (valid) | ✅ Invalid rejected client-side with a clear message, valid accepted |
+| CRUD — Events | Create → edit (prefilled form) → search-filter → delete | ✅ All four operations verified end-to-end in browser |
+| CRUD — Announcements | Create (admin-only) → verify non-admin can't see the button → edit → delete | ✅ Admin gate confirmed both client-side (button hidden) and would 403 server-side if bypassed |
+| Admin — role management | Change a user's role via the dropdown → persists | ✅ Verified via network request + UI state |
+| Admin panel access | Non-admin logged in → "Admin Panel" nav item absent | ✅ Verified |
+| Search | Filter Events list by title substring | ✅ Correctly narrows results |
+| Dark mode | Toggle → persists across reload via localStorage | ✅ Verified via `localStorage.getItem` and computed styles |
+| Vercel deployment | Simulated (`VERCEL=1` env var, importing `api/index.ts` directly) registration call | ✅ Returns 201 with real user data, writes to `/tmp` as expected |
+| Production build | `npm run build` (Vite + esbuild) | ✅ Succeeds, no errors |
+| Type safety | `tsc --noEmit` after every change set | ✅ Clean throughout |
+
+### 4.2 Edge cases specifically checked
+- Registering for an event you're already in (duplicate-registration guard).
+- Deleting content that isn't yours (blocked both client-side, via hidden edit/delete buttons, and
+  server-side, via `isOwnerOrAdmin` checks — client-side hiding is a UX nicety, not the actual
+  security boundary).
+- A Tailwind className string-concatenation bug caught before shipping: `fieldClass + " pl-10 ...
+  text-sm"` where `fieldClass` already contained `pl-9 ... text-xs` — two conflicting utility
+  classes for the same CSS property, whose winner depends on generated stylesheet order rather than
+  string order. Found by re-reading the diff, not by a linter; fixed by using two distinct,
+  non-overlapping class constants instead of concatenation.
+- Vercel's read-only filesystem: the original `initDb()` had an unguarded `fs.writeFileSync` that
+  would throw on every request once the serverless function existed (Vercel's deployment bundle is
+  read-only outside `/tmp`). Wrapped in try/catch with an in-memory fallback so a storage failure
+  degrades gracefully instead of taking down the whole API.
+
+### 4.3 Known limitations (explicitly not fixed, and why)
+- **Ephemeral storage on serverless deployments.** Vercel functions don't share memory or disk
+  across instances, and `/tmp` doesn't survive cold starts. This means on Vercel, accounts/sessions/
+  content are not guaranteed to persist across redeploys or be visible to every instance under
+  concurrent load. This was a deliberate scope decision for a one-day event — wiring up a real
+  database (Vercel Postgres/KV) was assessed and explicitly deferred as disproportionate effort for
+  a single-day, low-stakes deployment.
+- **In-memory sessions.** Auth tokens reset on server restart / cold start, same reasoning as above.
+
+---
+
+## 5. Final Product / Usage
+
+- **Register or log in** (demo buttons available for both roles).
+- **Dashboard**: personal stats, upcoming events, featured projects, announcements.
+- **Events / Projects / Opportunities / Resources**: browse, filter by category/timeline, search by
+  keyword. Logged-in users can create; owners (or admins) see edit/delete controls on their own
+  content.
+- **Announcements**: read-only for regular members; admins can post/edit/delete (they're official
+  chapter notices).
+- **Member Directory**: search chapter members by name, email, institution, or skill.
+- **Profile**: edit your own info, including a country-code-aware phone field.
+- **Admin Panel** (admin role only): manage every member's role, and review a live feed of recent
+  chapter activity (registrations, logins, content changes).
+- **Notifications**: bell icon in the navbar shows a persistent panel — populated by registration
+  events and the duplicate-registration guard.
+- **Dark mode**: toggle in the navbar, persists across sessions.
+
+### Deployment notes
+- **Local / self-hosted (Cloud Run-style)**: `npm run build && npm start` — runs the full Express
+  server with file-backed persistence in `./data/db.json`.
+- **Vercel**: connect the GitHub repo; `vercel.json` routes `/api/*` to `api/index.ts`. Storage is
+  ephemeral there (see §4.3) — acceptable for a short-lived event, not recommended for anything
+  needing durable data without adding a real database first.
