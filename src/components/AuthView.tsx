@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { api } from '../api';
 import { User } from '../types';
+import { COUNTRY_CODES, isValidLocalNumber } from '../phone';
 import { UserCheck, Lock, Mail, Phone, Calendar, MapPin, Building, User as UserIcon, Sparkles, AlertCircle, ArrowRight } from 'lucide-react';
 
 interface AuthViewProps {
@@ -21,7 +22,8 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
     username: '',
     email: '',
     password: '',
-    phone: '',
+    countryCode: '+91',
+    localNumber: '',
     gender: 'Male',
     dob: '',
     city: '',
@@ -57,54 +59,34 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
       setErrorMsg('Username, Email and Password are required.');
       return;
     }
+    if (regData.localNumber && !isValidLocalNumber(regData.countryCode, regData.localNumber)) {
+      setErrorMsg('Please enter a valid phone number for the selected country.');
+      return;
+    }
     setErrorMsg(null);
     setLoading(true);
 
-    // Intentionally introduce registration failures and incorrect behavior as requested
-    setTimeout(async () => {
-      try {
-        const isFailure = Math.random() < 0.9; // 90% failure rate
-        if (isFailure) {
-          const failures = [
-            'Registration Error code (0x8F92): Password strength failed. Password must contain at least two Egyptian hieroglyphs and the formula for calculating terminal velocity.',
-            'Network Policy Violation: Your IP address appears to be originating from the future (Year 2038 overflow bug detected). Please try again in 12 years.',
-            'Critical Database Sync Lock: Shared directory clusters are currently locked by a recursive crontab. Registration rejected by system daemon.',
-            'Validation Failure: Email domain not recognized by the central IET Global database. Student memberships must be registered via Morse Code.',
-            'Registration Terminated: User is typing too fast. Robotic input suspicion triggered. Please clear your cache and write your password in cursive.'
-          ];
-          setErrorMsg(failures[Math.floor(Math.random() * failures.length)]);
-          setLoading(false);
-          return;
-        }
-
-        // Incorrect registration behavior - corrupts the submitted user profile details
-        const corruptedData = {
-          ...regData,
-          username: `CorruptedUser_${Math.floor(Math.random() * 9999)}`,
-          email: `broken_${regData.email.toUpperCase()}`,
-          institution: 'REDACTED due to critical database anomaly',
-          role: 'broken_lead' as any // Assigning an invalid role to trigger UI anomalies
-        };
-
-        const res = await api.register(corruptedData);
-        if (res.success && res.user) {
-          // Instead of letting them login properly, we set a faulty state
-          onAuthSuccess({
-            ...res.user,
-            username: corruptedData.username,
-            email: corruptedData.email,
-            institution: corruptedData.institution,
-            role: 'broken_lead' as any
-          });
-        } else {
-          setErrorMsg(res.message || 'Registration failed.');
-        }
-      } catch (err: any) {
-        setErrorMsg('Error creating account. Server database state is: ANOMALOUS.');
-      } finally {
-        setLoading(false);
+    try {
+      const res = await api.register({
+        username: regData.username,
+        email: regData.email,
+        password: regData.password,
+        phone: regData.localNumber ? `${regData.countryCode} ${regData.localNumber}` : '',
+        gender: regData.gender,
+        dob: regData.dob,
+        city: regData.city,
+        institution: regData.institution,
+      });
+      if (res.success && res.user) {
+        onAuthSuccess(res.user);
+      } else {
+        setErrorMsg(res.message || 'Registration failed.');
       }
-    }, 800);
+    } catch (err: any) {
+      setErrorMsg('Error creating account. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Demo account quick login
@@ -127,8 +109,8 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
 
   return (
     <div className="min-h-[calc(100vh-65px)] bg-gradient-to-br from-[#622569] via-[#4a1b50] to-[#2b0f30] py-12 px-4 flex items-center justify-center">
-      <div className="w-full max-w-xl bg-white rounded-3xl shadow-2xl overflow-hidden border border-white/20">
-        
+      <div className="w-full max-w-xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden border border-white/20">
+
         {/* Auth Header */}
         <div className="bg-gradient-to-r from-[#622569] to-[#9b51e0] p-8 text-white text-center relative overflow-hidden">
           <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none" />
@@ -162,7 +144,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
         {/* Form Container */}
         <div className="p-8">
           {errorMsg && (
-            <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-start gap-3">
+            <div className="mb-6 p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs font-medium flex items-start gap-3">
               <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
               <span>{errorMsg}</span>
             </div>
@@ -172,7 +154,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
             /* LOGIN FORM */
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Email Address</label>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Email Address</label>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                   <input
@@ -181,13 +163,13 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                     value={loginEmail}
                     onChange={(e) => setLoginEmail(e.target.value)}
                     placeholder="email@example.com"
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-[#9b51e0] focus:ring-2 focus:ring-[#9b51e0]/20 outline-none transition-all"
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:border-[#9b51e0] focus:ring-2 focus:ring-[#9b51e0]/20 outline-none transition-all"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Password</label>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Password</label>
                 <div className="relative">
                   <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                   <input
@@ -196,7 +178,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-[#9b51e0] focus:ring-2 focus:ring-[#9b51e0]/20 outline-none transition-all"
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:border-[#9b51e0] focus:ring-2 focus:ring-[#9b51e0]/20 outline-none transition-all"
                   />
                 </div>
               </div>
@@ -211,20 +193,20 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
               </button>
 
               {/* Demo Accounts Box */}
-              <div className="mt-8 pt-6 border-t border-slate-100 text-center">
-                <p className="text-xs text-slate-500 font-medium mb-3">Quick Demo Login (Pre-configured Users)</p>
+              <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 text-center">
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mb-3">Quick Demo Login (Pre-configured Users)</p>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
                     onClick={() => handleQuickDemoLogin('venkatns2008@gmail.com')}
-                    className="py-2 px-3 bg-purple-50 hover:bg-purple-100 text-[#622569] text-xs font-medium rounded-xl border border-purple-200 transition-colors"
+                    className="py-2 px-3 bg-purple-50 dark:bg-purple-500/10 hover:bg-purple-100 dark:hover:bg-purple-500/20 text-[#622569] dark:text-purple-300 text-xs font-medium rounded-xl border border-purple-200 dark:border-purple-800 transition-colors"
                   >
                     Login as Chapter Lead
                   </button>
                   <button
                     type="button"
                     onClick={() => handleQuickDemoLogin('sarah.chen@iet.org')}
-                    className="py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-xl border border-slate-200 transition-colors"
+                    className="py-2 px-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-medium rounded-xl border border-slate-200 dark:border-slate-700 transition-colors"
                   >
                     Login as Student Member
                   </button>
@@ -236,7 +218,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
             <form onSubmit={handleRegister} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Username *</label>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Username *</label>
                   <div className="relative">
                     <UserIcon className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                     <input
@@ -245,13 +227,13 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                       value={regData.username}
                       onChange={(e) => setRegData({ ...regData, username: e.target.value })}
                       placeholder="John Doe"
-                      className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:border-[#9b51e0] outline-none"
+                      className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:border-[#9b51e0] outline-none"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Email *</label>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Email *</label>
                   <div className="relative">
                     <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                     <input
@@ -260,13 +242,13 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                       value={regData.email}
                       onChange={(e) => setRegData({ ...regData, email: e.target.value })}
                       placeholder="john@example.com"
-                      className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:border-[#9b51e0] outline-none"
+                      className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:border-[#9b51e0] outline-none"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Password *</label>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Password *</label>
                   <div className="relative">
                     <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                     <input
@@ -275,31 +257,42 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                       value={regData.password}
                       onChange={(e) => setRegData({ ...regData, password: e.target.value })}
                       placeholder="••••••••"
-                      className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:border-[#9b51e0] outline-none"
+                      className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:border-[#9b51e0] outline-none"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Phone Number</label>
-                  <div className="relative">
-                    <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-                    <input
-                      type="tel"
-                      value={regData.phone}
-                      onChange={(e) => setRegData({ ...regData, phone: e.target.value })}
-                      placeholder="+91 98765 43210"
-                      className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:border-[#9b51e0] outline-none"
-                    />
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Phone Number</label>
+                  <div className="flex gap-1.5">
+                    <select
+                      value={regData.countryCode}
+                      onChange={(e) => setRegData({ ...regData, countryCode: e.target.value })}
+                      className="w-24 shrink-0 px-1.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:border-[#9b51e0] outline-none"
+                    >
+                      {COUNTRY_CODES.map((c) => (
+                        <option key={c.code} value={c.code}>{c.code} {c.country}</option>
+                      ))}
+                    </select>
+                    <div className="relative flex-1">
+                      <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                      <input
+                        type="tel"
+                        value={regData.localNumber}
+                        onChange={(e) => setRegData({ ...regData, localNumber: e.target.value.replace(/[^\d]/g, '') })}
+                        placeholder="98765 43210"
+                        className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:border-[#9b51e0] outline-none"
+                      />
+                    </div>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Gender</label>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Gender</label>
                   <select
                     value={regData.gender}
                     onChange={(e) => setRegData({ ...regData, gender: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:border-[#9b51e0] outline-none"
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:border-[#9b51e0] outline-none"
                   >
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
@@ -308,20 +301,20 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Date of Birth</label>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Date of Birth</label>
                   <div className="relative">
                     <Calendar className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                     <input
                       type="date"
                       value={regData.dob}
                       onChange={(e) => setRegData({ ...regData, dob: e.target.value })}
-                      className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:border-[#9b51e0] outline-none"
+                      className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:border-[#9b51e0] outline-none"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">City</label>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">City</label>
                   <div className="relative">
                     <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                     <input
@@ -329,13 +322,13 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                       value={regData.city}
                       onChange={(e) => setRegData({ ...regData, city: e.target.value })}
                       placeholder="Chennai"
-                      className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:border-[#9b51e0] outline-none"
+                      className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:border-[#9b51e0] outline-none"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Institution / Campus</label>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Institution / Campus</label>
                   <div className="relative">
                     <Building className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                     <input
@@ -343,7 +336,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                       value={regData.institution}
                       onChange={(e) => setRegData({ ...regData, institution: e.target.value })}
                       placeholder="SRM / RVCE / Anna Univ"
-                      className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:border-[#9b51e0] outline-none"
+                      className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-800 focus:border-[#9b51e0] outline-none"
                     />
                   </div>
                 </div>

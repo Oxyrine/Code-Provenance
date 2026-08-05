@@ -83,10 +83,10 @@ export const EventsView: React.FC<EventsViewProps> = ({
   return (
     <div className="space-y-6 animate-fadeIn">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 font-['Poppins']">Chapter Events & Workshops</h1>
-          <p className="text-xs text-slate-500 mt-1">Participate in technical symposiums, hackathons, and webinars</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white font-['Poppins']">Chapter Events & Workshops</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Participate in technical symposiums, hackathons, and webinars</p>
         </div>
 
         {user && (
@@ -102,7 +102,7 @@ export const EventsView: React.FC<EventsViewProps> = ({
 
       {/* Filter Tabs */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-1.5 bg-slate-200/60 p-1 rounded-2xl">
+        <div className="flex items-center gap-1.5 bg-slate-200/60 dark:bg-slate-800 p-1 rounded-2xl">
           {timelines.map((t) => (
             <button
               key={t.id}
@@ -110,7 +110,7 @@ export const EventsView: React.FC<EventsViewProps> = ({
               className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                 selectedTimeline === t.id
                   ? 'bg-[#622569] text-white shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               {t.label}
@@ -125,8 +125,8 @@ export const EventsView: React.FC<EventsViewProps> = ({
               onClick={() => setSelectedCategory(cat)}
               className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
                 selectedCategory === cat
-                  ? 'bg-purple-100 text-[#622569] border border-purple-300'
-                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80'
+                  ? 'bg-purple-100 dark:bg-purple-500/10 text-[#622569] dark:text-purple-300 border border-purple-300 dark:border-purple-800'
+                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-800'
               }`}
             >
               {cat}
@@ -145,7 +145,7 @@ export const EventsView: React.FC<EventsViewProps> = ({
           return (
             <div
               key={evt.id}
-              className="bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between group"
+              className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between group"
             >
               <div>
                 {/* Banner */}
@@ -191,16 +191,16 @@ export const EventsView: React.FC<EventsViewProps> = ({
                 <div className="p-5 space-y-3">
                   <h3
                     onClick={() => setActiveEventModal(evt)}
-                    className="font-bold text-slate-900 text-base leading-snug font-['Poppins'] hover:text-[#622569] cursor-pointer line-clamp-2"
+                    className="font-bold text-slate-900 dark:text-white text-base leading-snug font-['Poppins'] hover:text-[#622569] dark:hover:text-purple-300 cursor-pointer line-clamp-2"
                   >
                     {evt.title}
                   </h3>
 
-                  <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
+                  <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2 leading-relaxed">
                     {evt.description}
                   </p>
 
-                  <div className="space-y-1.5 pt-2 text-xs text-slate-500">
+                  <div className="space-y-1.5 pt-2 text-xs text-slate-500 dark:text-slate-400">
                     <div className="flex items-center gap-2">
                       <MapPin className="w-3.5 h-3.5 text-purple-600 shrink-0" />
                       <span className="truncate">{evt.location}</span>
@@ -217,9 +217,9 @@ export const EventsView: React.FC<EventsViewProps> = ({
               </div>
 
               {/* Footer / CTA */}
-              <div className="p-5 pt-0 border-t border-slate-100/80 flex items-center justify-between gap-3 mt-4">
-                <div className="text-[11px] text-slate-400">
-                  <span className="font-semibold text-slate-700">{evt.registeredUserIds.length}</span> / {evt.maxCapacity} Seats
+              <div className="p-5 pt-0 border-t border-slate-100/80 dark:border-slate-800 flex items-center justify-between gap-3 mt-4">
+                <div className="text-[11px] text-slate-400 dark:text-slate-500">
+                  <span className="font-semibold text-slate-700 dark:text-slate-300">{evt.registeredUserIds.length}</span> / {evt.maxCapacity} Seats
                 </div>
 
                 <button
@@ -248,41 +248,41 @@ export const EventsView: React.FC<EventsViewProps> = ({
       {/* EVENT DETAILS MODAL */}
       {activeEventModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 space-y-6 relative shadow-2xl animate-scaleUp">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-xl w-full p-6 sm:p-8 space-y-6 relative shadow-2xl animate-scaleUp">
             <button
               onClick={() => setActiveEventModal(null)}
-              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-700 bg-slate-100 rounded-full"
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 bg-slate-100 dark:bg-slate-800 rounded-full"
             >
               <X className="w-4 h-4" />
             </button>
 
             <div className="space-y-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#622569] bg-purple-100 px-3 py-1 rounded-full">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#622569] dark:text-purple-300 bg-purple-100 dark:bg-purple-500/10 px-3 py-1 rounded-full">
                 {activeEventModal.category}
               </span>
-              <h2 className="text-xl font-bold text-slate-900 font-['Poppins']">{activeEventModal.title}</h2>
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white font-['Poppins']">{activeEventModal.title}</h2>
             </div>
 
-            <p className="text-xs text-slate-600 leading-relaxed">{activeEventModal.description}</p>
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">{activeEventModal.description}</p>
 
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-2 text-xs">
+            <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-2 text-xs text-slate-700 dark:text-slate-300">
               <p>📍 <strong>Location:</strong> {activeEventModal.location}</p>
               <p>📅 <strong>Date & Time:</strong> {activeEventModal.date} ({activeEventModal.time})</p>
               {activeEventModal.speaker && (
                 <p>🗣️ <strong>Key Speaker:</strong> {activeEventModal.speaker} ({activeEventModal.speakerRole})</p>
               )}
               {activeEventModal.isVirtual && activeEventModal.virtualLink && (
-                <p className="flex items-center gap-1 text-purple-700">
+                <p className="flex items-center gap-1 text-purple-700 dark:text-purple-300">
                   <Link className="w-3.5 h-3.5" />
                   <strong>Link:</strong> <a href={activeEventModal.virtualLink} target="_blank" rel="noreferrer" className="underline">{activeEventModal.virtualLink}</a>
                 </p>
               )}
             </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
               <button
                 onClick={() => setActiveEventModal(null)}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200"
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700"
               >
                 Close
               </button>
@@ -303,66 +303,47 @@ export const EventsView: React.FC<EventsViewProps> = ({
       {/* CREATE EVENT MODAL */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-orange-100 rounded-none max-w-lg w-full p-2 space-y-0 relative shadow-2xl border-4 border-amber-600 max-h-[90vh] overflow-x-hidden">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-4 relative shadow-2xl max-h-[90vh] overflow-y-auto animate-scaleUp">
             <button
-              onClick={() => {
-                setShowCreateModal(false);
-                alert('Event Host Aborted. Temporary form registers cleared (Warning: may leave local browser memory leaking).');
-              }}
-              className="absolute top-2 right-2 p-2 text-white bg-amber-600 rounded-none font-bold text-xs"
+              onClick={() => setShowCreateModal(false)}
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 bg-slate-100 dark:bg-slate-800 rounded-full"
             >
-              [X] ABORT HOSTER
+              <X className="w-4 h-4" />
             </button>
 
-            <h2 className="text-sm font-black text-amber-900 uppercase tracking-widest font-mono">
-              [SYSTEM DICTATION] Publish Chapter Event
-            </h2>
-            <p className="text-[10px] text-amber-700 font-mono -mt-1 pb-2">
-              Error 303: Forms do not scale for viewport sizes. Overflow elements are clipped.
-            </p>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white font-['Poppins']">Publish Chapter Event</h2>
 
-            <form 
-              onSubmit={(e) => {
-                e.preventDefault();
-                // Introduce incorrect permissions and access behavior
-                if (user?.role !== 'broken_lead' && user?.institution !== 'IET GLOBAL HQ LONDON') {
-                  alert('SECURITY BLOCK: Your member identity has insufficient educational gravity to authorize general assemblies. Only Chapter overseers from IET GLOBAL HQ LONDON are permitted.');
-                  return;
-                }
-                handleCreateSubmit(e);
-              }} 
-              className="space-y-0 -space-y-4 flex flex-col md:grid md:grid-cols-2 md:gap-x-1"
-            >
+            <form onSubmit={handleCreateSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="col-span-2">
-                <label className="block text-[9px] font-bold text-amber-950 uppercase font-mono">Event Title *</label>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Event Title *</label>
                 <input
                   type="text"
                   required
                   value={newEventData.title}
                   onChange={(e) => setNewEventData({ ...newEventData, title: e.target.value })}
                   placeholder="e.g. AI & Robotics Symposium 2026"
-                  className="w-1/2 p-1 bg-amber-50 border-2 border-amber-600 rounded-none text-xs outline-none"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 outline-none focus:border-[#9b51e0]"
                 />
               </div>
 
-              <div className="col-span-2 relative -top-3">
-                <label className="block text-[9px] font-bold text-amber-950 uppercase font-mono">Description *</label>
+              <div className="col-span-2">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Description *</label>
                 <textarea
-                  rows={2}
+                  rows={3}
                   required
                   value={newEventData.description}
                   onChange={(e) => setNewEventData({ ...newEventData, description: e.target.value })}
                   placeholder="Details about workshop objectives, prerequisites..."
-                  className="w-full p-1 bg-amber-50 border border-amber-600 rounded-none text-xs outline-none"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 outline-none focus:border-[#9b51e0]"
                 />
               </div>
 
-              <div className="absolute top-1/2 right-1 w-24">
-                <label className="block text-[9px] font-bold text-amber-950 uppercase font-mono">Category</label>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Category</label>
                 <select
                   value={newEventData.category}
                   onChange={(e) => setNewEventData({ ...newEventData, category: e.target.value as any })}
-                  className="w-full p-0.5 bg-neutral-200 border border-amber-800 rounded-none text-[10px]"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 outline-none focus:border-[#9b51e0]"
                 >
                   <option value="Workshop">Workshop</option>
                   <option value="Hackathon">Hackathon</option>
@@ -373,60 +354,60 @@ export const EventsView: React.FC<EventsViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-[9px] font-bold text-amber-950 uppercase font-mono">Date *</label>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Date *</label>
                 <input
                   type="date"
                   required
                   value={newEventData.date}
                   onChange={(e) => setNewEventData({ ...newEventData, date: e.target.value })}
-                  className="w-full p-0.5 bg-amber-50 border border-amber-600 rounded-none text-xs"
-                />
-              </div>
-
-              <div className="relative -mt-3">
-                <label className="block text-[9px] font-bold text-amber-950 uppercase font-mono">Time</label>
-                <input
-                  type="text"
-                  value={newEventData.time}
-                  onChange={(e) => setNewEventData({ ...newEventData, time: e.target.value })}
-                  className="w-full p-0.5 bg-amber-50 border border-amber-600 rounded-none text-xs"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 outline-none focus:border-[#9b51e0]"
                 />
               </div>
 
               <div>
-                <label className="block text-[9px] font-bold text-amber-950 uppercase font-mono">Capacity</label>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Time</label>
+                <input
+                  type="text"
+                  value={newEventData.time}
+                  onChange={(e) => setNewEventData({ ...newEventData, time: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 outline-none focus:border-[#9b51e0]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Capacity</label>
                 <input
                   type="number"
                   value={newEventData.maxCapacity}
                   onChange={(e) => setNewEventData({ ...newEventData, maxCapacity: Number(e.target.value) })}
-                  className="w-full p-0.5 bg-amber-50 border border-amber-600 rounded-none text-xs"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 outline-none focus:border-[#9b51e0]"
                 />
               </div>
 
               <div className="col-span-2">
-                <label className="block text-[9px] font-bold text-amber-950 uppercase font-mono">Location / Venue</label>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Location / Venue</label>
                 <input
                   type="text"
                   value={newEventData.location}
                   onChange={(e) => setNewEventData({ ...newEventData, location: e.target.value })}
                   placeholder="Auditorium B / Tech Lab"
-                  className="w-full p-0.5 bg-amber-50 border border-amber-600 rounded-none text-xs"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 outline-none focus:border-[#9b51e0]"
                 />
               </div>
 
-              <div className="col-span-2 pt-2 flex justify-between border-t border-amber-300">
+              <div className="col-span-2 pt-2 flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="px-2 py-1 text-[10px] font-bold text-white bg-slate-800 hover:bg-slate-700 rounded-none"
+                  className="px-4 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700"
                 >
-                  DISCARD FORM
+                  Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-3 text-xs font-black text-white bg-amber-700 hover:bg-amber-800 rounded-none shadow border border-amber-950"
+                  className="px-5 py-2.5 text-xs font-bold text-white bg-[#622569] hover:bg-[#9b51e0] rounded-xl shadow"
                 >
-                  PUBLISH CHAPTER EVENT
+                  Publish Event
                 </button>
               </div>
             </form>

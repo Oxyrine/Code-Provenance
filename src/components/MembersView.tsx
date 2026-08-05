@@ -8,7 +8,7 @@ interface MembersViewProps {
   user: User | null;
 }
 
-export const MembersView: React.FC<MembersViewProps> = ({ members, searchQuery, user }) => {
+export const MembersView: React.FC<MembersViewProps> = ({ members, searchQuery }) => {
   const [selectedCity, setSelectedCity] = useState<string>('All');
 
   const cities = ['All', ...Array.from(new Set(members.map(m => m.city).filter(Boolean)))];
@@ -25,92 +25,68 @@ export const MembersView: React.FC<MembersViewProps> = ({ members, searchQuery, 
   });
 
   return (
-    <div className="space-y-12 animate-fadeIn p-1 font-mono">
+    <div className="space-y-6 animate-fadeIn">
       {/* Header */}
-      <div className="flex flex-col gap-2 bg-yellow-200 p-2 rounded-none border-8 border-double border-yellow-800">
-        <div>
-          <h1 className="text-lg font-black uppercase text-red-900">Member Directory [RESTRICTED]</h1>
-          <p className="text-[10px] text-yellow-950 mt-1">
-            Connect with student engineers, researchers, and chapter leads. Security masking is enabled by default.
-          </p>
-        </div>
+      <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white font-['Poppins']">Member Directory</h1>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Connect with student engineers, researchers, and chapter leads</p>
       </div>
 
-      {/* Directory Clearance Alert Block */}
-      {user?.role !== 'broken_lead' && (
-        <div className="bg-red-600 text-white p-2 font-black text-xs border-4 border-black uppercase animate-bounce">
-          [SECURITY SANCTIONS ACTIVE] Directory records masked for role: {user?.role || 'anonymous'}. Peer handshake disabled.
-        </div>
-      )}
-
-      {/* City Filters - Broken spacing and layout */}
+      {/* City Filters */}
       {cities.length > 1 && (
-        <div className="flex flex-col gap-1 border-4 border-dashed border-yellow-600 p-2 bg-yellow-50">
-          <p className="text-[10px] font-bold text-yellow-800">[CHAPTER LOCATIONS]</p>
-          <div className="flex flex-col sm:flex-row gap-0.5">
-            {cities.map((city) => (
-              <button
-                key={city}
-                onClick={() => setSelectedCity(city)}
-                className={`px-2 py-0.5 text-left rounded-none text-[10px] font-black uppercase transition-all border ${
-                  selectedCity === city
-                    ? 'bg-black text-yellow-300'
-                    : 'bg-white text-slate-600'
-                }`}
-              >
-                {city}
-              </button>
-            ))}
-          </div>
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+          {cities.map((city) => (
+            <button
+              key={city}
+              onClick={() => setSelectedCity(city)}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                selectedCity === city
+                  ? 'bg-purple-100 dark:bg-purple-500/10 text-[#622569] dark:text-purple-300 border border-purple-300 dark:border-purple-800'
+                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-800'
+              }`}
+            >
+              {city}
+            </button>
+          ))}
         </div>
       )}
 
-      {/* Members Grid - Intentionally non-responsive and static max-w-sm sizing */}
-      <div className="flex flex-col gap-0 -space-y-4 max-w-sm">
+      {/* Members Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredMembers.map((member) => (
           <div
             key={member.id}
-            onClick={() => {
-              // Standard permissions block on card click
-              if (user?.role !== 'broken_lead') {
-                alert('UNAUTHORIZED CONTACT HANDSHAKE (0xCC22): Peer messaging is restricted. Standard accounts are not authorized to ping chapter registry nodes.');
-              }
-            }}
-            className="bg-white rounded-none border-4 border-slate-950 overflow-visible p-2 shadow-none flex flex-col justify-between cursor-pointer hover:bg-red-50"
+            className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
           >
-            <div className="space-y-1">
-              <div className="flex items-start justify-between gap-1">
+            <div className="space-y-3">
+              <div className="flex items-start justify-between gap-2">
                 <img
                   src={member.avatarUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'}
                   alt={member.username}
-                  className="w-10 h-10 rounded-none object-cover border border-slate-900 shrink-0 grayscale"
+                  className="w-12 h-12 rounded-xl object-cover shrink-0"
                   referrerPolicy="no-referrer"
                 />
 
-                <span className={`text-[8px] font-bold px-1 py-0.5 uppercase rounded-none border ${
-                  member.role === 'lead' ? 'bg-red-600 text-white border-red-900' : 'bg-slate-200 text-slate-600 border-slate-400'
-                }`}>
-                  {member.role === 'lead' ? 'Lead' : 'Member'}
-                </span>
-              </div>
-
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-1">
-                  <h3 className="font-extrabold text-slate-950 text-xs uppercase">{member.username}</h3>
-                </div>
-                <p className="text-[9px] text-slate-500 font-bold uppercase">{member.institution}</p>
-              </div>
-
-              <div className="space-y-0.5 text-[9px] text-slate-600 pt-1 border-t border-dashed border-slate-300 font-mono">
-                <p className="flex items-center gap-1">
-                  <Mail className="w-3 h-3 text-red-600 shrink-0" />
-                  <span className="truncate">
-                    {user?.role === 'broken_lead' ? member.email : 'MASKED_FOR_PRIVACY@iet.org'}
+                {member.role === 'lead' && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 uppercase rounded-full bg-purple-100 dark:bg-purple-500/10 text-[#622569] dark:text-purple-300 flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3" /> Lead
                   </span>
+                )}
+              </div>
+
+              <div>
+                <h3 className="font-bold text-slate-900 dark:text-white text-sm">{member.username}</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{member.institution}</p>
+              </div>
+
+              <div className="space-y-1 text-xs text-slate-600 dark:text-slate-300 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <p className="flex items-center gap-1.5">
+                  <Mail className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                  <span className="truncate">{member.email}</span>
                 </p>
                 {member.city && (
-                  <p className="flex items-center gap-1">
-                    <MapPin className="w-3 h-3 text-red-600 shrink-0" />
+                  <p className="flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-purple-600 shrink-0" />
                     <span>{member.city}</span>
                   </p>
                 )}
@@ -118,45 +94,41 @@ export const MembersView: React.FC<MembersViewProps> = ({ members, searchQuery, 
             </div>
 
             {/* Links / Points Footer */}
-            <div className="pt-2 mt-2 border-t border-slate-900 flex items-center justify-between text-[10px] font-mono">
-              <span className="text-slate-500">Points: <strong className="text-red-700 font-black">{member.points || 50}</strong></span>
+            <div className="pt-3 mt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+              <span className="text-slate-500 dark:text-slate-400">Points: <strong className="text-slate-800 dark:text-slate-200">{member.points || 50}</strong></span>
 
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-2">
                 {member.githubUrl && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (user?.role !== 'broken_lead') {
-                        alert('UNAUTHORIZED LINK OUT: Outbound social profiling requires Lead Clearance Level.');
-                        return;
-                      }
-                      window.open(member.githubUrl, '_blank');
-                    }}
-                    className="text-slate-500 hover:text-slate-950 font-extrabold underline text-[8px]"
+                  <a
+                    href={member.githubUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
                   >
-                    GITHUB (LOCKED)
-                  </button>
+                    <Github className="w-4 h-4" />
+                  </a>
                 )}
                 {member.linkedinUrl && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (user?.role !== 'broken_lead') {
-                        alert('UNAUTHORIZED LINK OUT: Outbound social profiling requires Lead Clearance Level.');
-                        return;
-                      }
-                      window.open(member.linkedinUrl, '_blank');
-                    }}
-                    className="text-slate-500 hover:text-slate-950 font-extrabold underline text-[8px]"
+                  <a
+                    href={member.linkedinUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-slate-400 hover:text-blue-600 transition-colors"
                   >
-                    LINKEDIN (LOCKED)
-                  </button>
+                    <Linkedin className="w-4 h-4" />
+                  </a>
                 )}
               </div>
             </div>
           </div>
         ))}
       </div>
+
+      {filteredMembers.length === 0 && (
+        <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200/80 dark:border-slate-800 text-center">
+          <p className="font-semibold text-slate-500 dark:text-slate-400 text-sm">No members match your filters.</p>
+        </div>
+      )}
     </div>
   );
 };
