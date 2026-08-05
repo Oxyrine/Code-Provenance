@@ -596,6 +596,16 @@ export default function App() {
           </main>
         </div>
 
+        {/* Footer Section */}
+        <footer className="mt-auto border-t border-black/5 dark:border-white/5 bg-black/[0.02] dark:bg-white/[0.02] backdrop-blur-md py-6 px-6 lg:px-10 flex flex-col sm:flex-row items-center justify-between text-[11px] font-medium text-slate-500 dark:text-slate-400 relative z-20">
+          <p>© 2026 IET Student Chapter. All rights reserved.</p>
+          <div className="flex items-center gap-6 mt-4 sm:mt-0">
+            <a href="#" className="hover:text-[#622569] dark:hover:text-purple-300 transition-colors">Terms & Conditions</a>
+            <a href="#" className="hover:text-[#622569] dark:hover:text-purple-300 transition-colors">Privacy Policy</a>
+            <a href="#" className="hover:text-[#622569] dark:hover:text-purple-300 transition-colors">Code of Conduct</a>
+          </div>
+        </footer>
+
         {/* Toast Notification Popup */}
         {toast && (
           <div className="fixed bottom-6 right-6 z-50 glass-shell animate-slideUp">
