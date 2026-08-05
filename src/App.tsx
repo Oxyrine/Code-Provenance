@@ -12,6 +12,7 @@ import { OpportunitiesView } from './components/OpportunitiesView';
 import { ResourcesView } from './components/ResourcesView';
 import { MembersView } from './components/MembersView';
 import { AnnouncementsView } from './components/AnnouncementsView';
+import { AdminView } from './components/AdminView';
 import { CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 
 const DARK_MODE_KEY = 'iet_dark_mode';
@@ -43,6 +44,20 @@ export default function App() {
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3500);
+  };
+
+  // Notification panel (persisted list, separate from ephemeral toasts)
+  const [notifications, setNotifications] = useState<{ id: string; message: string; type: 'info' | 'warning' | 'success'; read: boolean; timestamp: string }[]>([]);
+
+  const pushNotification = (message: string, type: 'info' | 'warning' | 'success' = 'info') => {
+    setNotifications(prev => [
+      { id: `notif_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, message, type, read: false, timestamp: new Date().toISOString() },
+      ...prev,
+    ].slice(0, 50));
+  };
+
+  const markNotificationsRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   };
 
   const toggleDarkMode = () => {
@@ -119,11 +134,19 @@ export default function App() {
       return;
     }
 
+    const event = events.find(e => e.id === eventId);
+    if (event?.registeredUserIds.includes(currentUser.id)) {
+      pushNotification(`You're already registered for "${event.title}".`, 'warning');
+      showToast('You are already registered for this event.', 'error');
+      return;
+    }
+
     try {
       const res = await api.registerEvent(eventId);
       if (res.success && res.event) {
         setEvents(events.map(e => e.id === eventId ? res.event! : e));
-        showToast(res.registered ? 'Registered for the event!' : 'Unregistered from the event.', 'success');
+        pushNotification(`Registered for "${res.event.title}".`, 'success');
+        showToast('Registered for the event!', 'success');
       } else {
         showToast(res.message || 'Action failed', 'error');
       }
@@ -169,6 +192,37 @@ export default function App() {
     }
   };
 
+  const handleUpdateProject = async (projectId: string, projectData: Partial<Project>): Promise<boolean> => {
+    try {
+      const res = await api.updateProject(projectId, projectData);
+      if (res.success && res.project) {
+        setProjects(projects.map(p => p.id === projectId ? res.project! : p));
+        showToast('Project updated successfully!', 'success');
+        return true;
+      } else {
+        showToast(res.message || 'Failed to update project', 'error');
+        return false;
+      }
+    } catch {
+      showToast('Error updating project. Please try again.', 'error');
+      return false;
+    }
+  };
+
+  const handleDeleteProject = async (projectId: string) => {
+    try {
+      const res = await api.deleteProject(projectId);
+      if (res.success) {
+        setProjects(projects.filter(p => p.id !== projectId));
+        showToast('Project deleted.', 'success');
+      } else {
+        showToast(res.message || 'Failed to delete project', 'error');
+      }
+    } catch {
+      showToast('Error deleting project. Please try again.', 'error');
+    }
+  };
+
   // Create Event Handler
   const handleCreateEvent = async (eventData: Partial<Event>): Promise<boolean> => {
     try {
@@ -184,6 +238,37 @@ export default function App() {
     } catch {
       showToast('Server error creating event. Please try again.', 'error');
       return false;
+    }
+  };
+
+  const handleUpdateEvent = async (eventId: string, eventData: Partial<Event>): Promise<boolean> => {
+    try {
+      const res = await api.updateEvent(eventId, eventData);
+      if (res.success && res.event) {
+        setEvents(events.map(e => e.id === eventId ? res.event! : e));
+        showToast('Event updated successfully!', 'success');
+        return true;
+      } else {
+        showToast(res.message || 'Failed to update event', 'error');
+        return false;
+      }
+    } catch {
+      showToast('Server error updating event. Please try again.', 'error');
+      return false;
+    }
+  };
+
+  const handleDeleteEvent = async (eventId: string) => {
+    try {
+      const res = await api.deleteEvent(eventId);
+      if (res.success) {
+        setEvents(events.filter(e => e.id !== eventId));
+        showToast('Event deleted.', 'success');
+      } else {
+        showToast(res.message || 'Failed to delete event', 'error');
+      }
+    } catch {
+      showToast('Server error deleting event. Please try again.', 'error');
     }
   };
 
@@ -205,6 +290,37 @@ export default function App() {
     }
   };
 
+  const handleUpdateOpportunity = async (oppId: string, oppData: Partial<Opportunity>): Promise<boolean> => {
+    try {
+      const res = await api.updateOpportunity(oppId, oppData);
+      if (res.success && res.opportunity) {
+        setOpportunities(opportunities.map(o => o.id === oppId ? res.opportunity! : o));
+        showToast('Opportunity updated successfully!', 'success');
+        return true;
+      } else {
+        showToast(res.message || 'Failed to update opportunity', 'error');
+        return false;
+      }
+    } catch {
+      showToast('Server error updating opportunity. Please try again.', 'error');
+      return false;
+    }
+  };
+
+  const handleDeleteOpportunity = async (oppId: string) => {
+    try {
+      const res = await api.deleteOpportunity(oppId);
+      if (res.success) {
+        setOpportunities(opportunities.filter(o => o.id !== oppId));
+        showToast('Opportunity deleted.', 'success');
+      } else {
+        showToast(res.message || 'Failed to delete opportunity', 'error');
+      }
+    } catch {
+      showToast('Server error deleting opportunity. Please try again.', 'error');
+    }
+  };
+
   // Create Resource Handler
   const handleCreateResource = async (resData: Partial<Resource>): Promise<boolean> => {
     try {
@@ -220,6 +336,86 @@ export default function App() {
     } catch {
       showToast('Server error sharing resource. Please try again.', 'error');
       return false;
+    }
+  };
+
+  const handleUpdateResource = async (resId: string, resData: Partial<Resource>): Promise<boolean> => {
+    try {
+      const res = await api.updateResource(resId, resData);
+      if (res.success && res.resource) {
+        setResources(resources.map(r => r.id === resId ? res.resource! : r));
+        showToast('Resource updated successfully!', 'success');
+        return true;
+      } else {
+        showToast(res.message || 'Failed to update resource', 'error');
+        return false;
+      }
+    } catch {
+      showToast('Server error updating resource. Please try again.', 'error');
+      return false;
+    }
+  };
+
+  const handleDeleteResource = async (resId: string) => {
+    try {
+      const res = await api.deleteResource(resId);
+      if (res.success) {
+        setResources(resources.filter(r => r.id !== resId));
+        showToast('Resource deleted.', 'success');
+      } else {
+        showToast(res.message || 'Failed to delete resource', 'error');
+      }
+    } catch {
+      showToast('Server error deleting resource. Please try again.', 'error');
+    }
+  };
+
+  // Announcement Handlers (admin only, enforced server-side)
+  const handleCreateAnnouncement = async (annData: Partial<Announcement>): Promise<boolean> => {
+    try {
+      const res = await api.createAnnouncement(annData);
+      if (res.success && res.announcement) {
+        setAnnouncements([res.announcement, ...announcements]);
+        showToast('Announcement posted!', 'success');
+        return true;
+      } else {
+        showToast(res.message || 'Failed to post announcement', 'error');
+        return false;
+      }
+    } catch {
+      showToast('Server error posting announcement. Please try again.', 'error');
+      return false;
+    }
+  };
+
+  const handleUpdateAnnouncement = async (annId: string, annData: Partial<Announcement>): Promise<boolean> => {
+    try {
+      const res = await api.updateAnnouncement(annId, annData);
+      if (res.success && res.announcement) {
+        setAnnouncements(announcements.map(a => a.id === annId ? res.announcement! : a));
+        showToast('Announcement updated!', 'success');
+        return true;
+      } else {
+        showToast(res.message || 'Failed to update announcement', 'error');
+        return false;
+      }
+    } catch {
+      showToast('Server error updating announcement. Please try again.', 'error');
+      return false;
+    }
+  };
+
+  const handleDeleteAnnouncement = async (annId: string) => {
+    try {
+      const res = await api.deleteAnnouncement(annId);
+      if (res.success) {
+        setAnnouncements(announcements.filter(a => a.id !== annId));
+        showToast('Announcement deleted.', 'success');
+      } else {
+        showToast(res.message || 'Failed to delete announcement', 'error');
+      }
+    } catch {
+      showToast('Server error deleting announcement. Please try again.', 'error');
     }
   };
 
@@ -270,6 +466,8 @@ export default function App() {
           setSearchQuery={setSearchQuery}
           darkMode={darkMode}
           onToggleDarkMode={toggleDarkMode}
+          notifications={notifications}
+          onOpenNotifications={markNotificationsRead}
         />
 
         {/* Main Body */}
@@ -309,6 +507,8 @@ export default function App() {
                 user={currentUser}
                 onRegisterEvent={handleRegisterEvent}
                 onCreateEvent={handleCreateEvent}
+                onUpdateEvent={handleUpdateEvent}
+                onDeleteEvent={handleDeleteEvent}
                 searchQuery={searchQuery}
               />
             )}
@@ -319,6 +519,8 @@ export default function App() {
                 user={currentUser}
                 onLikeProject={handleLikeProject}
                 onSubmitProject={handleSubmitProject}
+                onUpdateProject={handleUpdateProject}
+                onDeleteProject={handleDeleteProject}
                 searchQuery={searchQuery}
               />
             )}
@@ -328,6 +530,8 @@ export default function App() {
                 opportunities={opportunities}
                 user={currentUser}
                 onCreateOpportunity={handleCreateOpportunity}
+                onUpdateOpportunity={handleUpdateOpportunity}
+                onDeleteOpportunity={handleDeleteOpportunity}
                 searchQuery={searchQuery}
               />
             )}
@@ -337,6 +541,8 @@ export default function App() {
                 resources={resources}
                 user={currentUser}
                 onCreateResource={handleCreateResource}
+                onUpdateResource={handleUpdateResource}
+                onDeleteResource={handleDeleteResource}
                 searchQuery={searchQuery}
               />
             )}
@@ -353,7 +559,28 @@ export default function App() {
             {activeTab === 'announcements' && (
               <AnnouncementsView
                 announcements={announcements}
+                user={currentUser}
+                onCreateAnnouncement={handleCreateAnnouncement}
+                onUpdateAnnouncement={handleUpdateAnnouncement}
+                onDeleteAnnouncement={handleDeleteAnnouncement}
+                searchQuery={searchQuery}
               />
+            )}
+
+            {activeTab === 'admin' && (
+              currentUser?.role === 'admin' ? (
+                <AdminView />
+              ) : (
+                <DashboardView
+                  user={currentUser!}
+                  events={events}
+                  projects={projects}
+                  announcements={announcements}
+                  setActiveTab={setActiveTab}
+                  onRegisterEvent={handleRegisterEvent}
+                  onLikeProject={handleLikeProject}
+                />
+              )
             )}
 
             {activeTab === 'profile' && (

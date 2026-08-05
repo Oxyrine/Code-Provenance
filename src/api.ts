@@ -1,4 +1,4 @@
-import { User, Event, Project, Announcement, Opportunity, Resource, AuthResponse } from './types';
+import { User, Event, Project, Announcement, Opportunity, Resource, AuthResponse, ActivityEntry } from './types';
 
 
 const TOKEN_KEY = 'iet_auth_token';
@@ -167,6 +167,25 @@ export const api = {
     return res.json();
   },
 
+  async updateEvent(eventId: string, eventData: Partial<Event>): Promise<{ success: boolean; event?: Event; message?: string }> {
+    invalidateApiCache();
+    const res = await fetch(`/api/events/${eventId}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(eventData),
+    });
+    return res.json();
+  },
+
+  async deleteEvent(eventId: string): Promise<{ success: boolean; message?: string }> {
+    invalidateApiCache();
+    const res = await fetch(`/api/events/${eventId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    return res.json();
+  },
+
   // Projects
   async getProjects(): Promise<{ success: boolean; projects: Project[] }> {
     return fetchWithCache('/api/projects');
@@ -191,9 +210,57 @@ export const api = {
     return res.json();
   },
 
+  async updateProject(projectId: string, projectData: Partial<Project>): Promise<{ success: boolean; project?: Project; message?: string }> {
+    invalidateApiCache();
+    const res = await fetch(`/api/projects/${projectId}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(projectData),
+    });
+    return res.json();
+  },
+
+  async deleteProject(projectId: string): Promise<{ success: boolean; message?: string }> {
+    invalidateApiCache();
+    const res = await fetch(`/api/projects/${projectId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    return res.json();
+  },
+
   // Announcements
   async getAnnouncements(): Promise<{ success: boolean; announcements: Announcement[] }> {
     return fetchWithCache('/api/announcements');
+  },
+
+  async createAnnouncement(annData: Partial<Announcement>): Promise<{ success: boolean; announcement?: Announcement; message?: string }> {
+    invalidateApiCache();
+    const res = await fetch('/api/announcements', {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(annData),
+    });
+    return res.json();
+  },
+
+  async updateAnnouncement(annId: string, annData: Partial<Announcement>): Promise<{ success: boolean; announcement?: Announcement; message?: string }> {
+    invalidateApiCache();
+    const res = await fetch(`/api/announcements/${annId}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(annData),
+    });
+    return res.json();
+  },
+
+  async deleteAnnouncement(annId: string): Promise<{ success: boolean; message?: string }> {
+    invalidateApiCache();
+    const res = await fetch(`/api/announcements/${annId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    return res.json();
   },
 
   // Opportunities
@@ -211,6 +278,25 @@ export const api = {
     return res.json();
   },
 
+  async updateOpportunity(oppId: string, oppData: Partial<Opportunity>): Promise<{ success: boolean; opportunity?: Opportunity; message?: string }> {
+    invalidateApiCache();
+    const res = await fetch(`/api/opportunities/${oppId}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(oppData),
+    });
+    return res.json();
+  },
+
+  async deleteOpportunity(oppId: string): Promise<{ success: boolean; message?: string }> {
+    invalidateApiCache();
+    const res = await fetch(`/api/opportunities/${oppId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    return res.json();
+  },
+
   // Resources
   async getResources(): Promise<{ success: boolean; resources: Resource[] }> {
     return fetchWithCache('/api/resources');
@@ -223,6 +309,45 @@ export const api = {
       headers: getAuthHeaders(),
       body: JSON.stringify(resData),
     });
+    return res.json();
+  },
+
+  async updateResource(resId: string, resData: Partial<Resource>): Promise<{ success: boolean; resource?: Resource; message?: string }> {
+    invalidateApiCache();
+    const res = await fetch(`/api/resources/${resId}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(resData),
+    });
+    return res.json();
+  },
+
+  async deleteResource(resId: string): Promise<{ success: boolean; message?: string }> {
+    invalidateApiCache();
+    const res = await fetch(`/api/resources/${resId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    return res.json();
+  },
+
+  // Admin
+  async getAdminUsers(): Promise<{ success: boolean; users?: User[]; message?: string }> {
+    const res = await fetch('/api/admin/users', { headers: getAuthHeaders() });
+    return res.json();
+  },
+
+  async updateUserRole(userId: string, role: 'member' | 'lead' | 'admin'): Promise<{ success: boolean; user?: User; message?: string }> {
+    const res = await fetch(`/api/admin/users/${userId}/role`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ role }),
+    });
+    return res.json();
+  },
+
+  async getAdminActivity(): Promise<{ success: boolean; activity?: ActivityEntry[]; message?: string }> {
+    const res = await fetch('/api/admin/activity', { headers: getAuthHeaders() });
     return res.json();
   },
 

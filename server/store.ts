@@ -38,7 +38,7 @@ const INITIAL_DATA: DatabaseSchema = {
       dob: '2004-05-15',
       city: 'Chennai',
       institution: 'IET Student Chapter - SRM Institute of Science and Technology',
-      role: 'lead',
+      role: 'admin',
       bio: 'Full Stack Engineer & Tech Enthusiast passionate about building impactful community platforms and AI systems.',
       skills: ['React', 'TypeScript', 'Node.js', 'Python', 'Tailwind CSS', 'Docker'],
       interests: ['AI Research', 'Open Source', 'Embedded Systems', 'IoT'],

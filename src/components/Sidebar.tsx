@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Calendar, FolderGit2, Users, User, Megaphone, LogOut, Award, Briefcase, BookOpen } from 'lucide-react';
+import { LayoutDashboard, Calendar, FolderGit2, Users, User, Megaphone, LogOut, Award, Briefcase, BookOpen, ShieldCheck } from 'lucide-react';
 import { User as UserType } from '../types';
 
 interface SidebarProps {
@@ -24,6 +24,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'members', label: 'Member Directory', icon: Users },
     { id: 'announcements', label: 'Announcements', icon: Megaphone },
     { id: 'profile', label: 'My Profile', icon: User },
+    ...(user?.role === 'admin' ? [{ id: 'admin', label: 'Admin Panel', icon: ShieldCheck }] : []),
   ];
 
   return (

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Project, User } from '../types';
-import { Github, ExternalLink, Star, PlusCircle, Sparkles, X } from 'lucide-react';
+import { Github, ExternalLink, Star, PlusCircle, Sparkles, X, Pencil, Trash2 } from 'lucide-react';
 import { Reveal } from './Reveal';
 
 interface ProjectsViewProps {
@@ -8,32 +8,37 @@ interface ProjectsViewProps {
   user: User | null;
   onLikeProject: (projectId: string) => void;
   onSubmitProject: (projectData: Partial<Project>) => Promise<boolean>;
+  onUpdateProject: (projectId: string, projectData: Partial<Project>) => Promise<boolean>;
+  onDeleteProject: (projectId: string) => void;
   searchQuery: string;
 }
+
+const emptyProjectForm = {
+  title: '',
+  tagline: '',
+  description: '',
+  domain: 'AI / ML' as Project['domain'],
+  githubUrl: '',
+  demoUrl: '',
+  teamMembersStr: '',
+  imageUrl: '',
+};
 
 export const ProjectsView: React.FC<ProjectsViewProps> = ({
   projects,
   user,
   onLikeProject,
   onSubmitProject,
+  onUpdateProject,
+  onDeleteProject,
   searchQuery,
 }) => {
   const [selectedDomain, setSelectedDomain] = useState<string>('All');
   const [selectedTimeline, setSelectedTimeline] = useState<'all' | 'present' | 'past' | 'future'>('all');
   const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
 
-  const [newProjData, setNewProjData] = useState({
-    title: '',
-    tagline: '',
-    description: '',
-    domain: 'AI / ML' as Project['domain'],
-    githubUrl: '',
-    demoUrl: '',
-    teamMembersStr: '',
-    imageUrl: '',
-    status: 'Active' as 'Active' | 'Completed' | 'Research',
-    timeline: 'present' as 'past' | 'present' | 'future',
-  });
+  const [newProjData, setNewProjData] = useState(emptyProjectForm);
 
   const domains = ['All', 'AI / ML', 'Web Development', 'IoT & Embedded', 'Robotics', 'Cybersecurity', 'Mobile App'];
   const timelines: { id: 'all' | 'present' | 'past' | 'future'; label: string }[] = [
@@ -56,6 +61,34 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
     return matchesDomain && matchesTimeline && matchesSearch;
   });
 
+  const canModify = (proj: Project) => !!user && (user.id === proj.authorId || user.role === 'admin');
+
+  const openCreateModal = () => {
+    setEditingProject(null);
+    setNewProjData(emptyProjectForm);
+    setShowSubmitModal(true);
+  };
+
+  const openEditModal = (proj: Project) => {
+    setEditingProject(proj);
+    setNewProjData({
+      title: proj.title,
+      tagline: proj.tagline,
+      description: proj.description,
+      domain: proj.domain,
+      githubUrl: proj.githubUrl,
+      demoUrl: proj.demoUrl || '',
+      teamMembersStr: proj.teamMembers.join(', '),
+      imageUrl: proj.imageUrl || '',
+    });
+    setShowSubmitModal(true);
+  };
+
+  const handleDelete = (proj: Project) => {
+    if (window.confirm(`Delete "${proj.title}"? This cannot be undone.`)) {
+      onDeleteProject(proj.id);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,25 +98,14 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
       ? newProjData.teamMembersStr.split(',').map(s => s.trim())
       : [user ? user.username : 'Author'];
 
-    const ok = await onSubmitProject({
-      ...newProjData,
-      teamMembers: team,
-    });
+    const ok = editingProject
+      ? await onUpdateProject(editingProject.id, { ...newProjData, teamMembers: team })
+      : await onSubmitProject({ ...newProjData, teamMembers: team });
 
     if (ok) {
       setShowSubmitModal(false);
-      setNewProjData({
-        title: '',
-        tagline: '',
-        description: '',
-        domain: 'AI / ML',
-        githubUrl: '',
-        demoUrl: '',
-        teamMembersStr: '',
-        imageUrl: '',
-        status: 'Active',
-        timeline: 'present',
-      });
+      setEditingProject(null);
+      setNewProjData(emptyProjectForm);
     }
   };
 
@@ -101,7 +123,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
 
             {user && (
               <button
-                onClick={() => setShowSubmitModal(true)}
+                onClick={openCreateModal}
                 className="cta-pill bg-[#622569] hover:bg-[#7a2f83] text-white group"
               >
                 <span>Submit Project</span>
@@ -183,17 +205,29 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                         </span>
                       </div>
 
-                      <button
-                        onClick={() => onLikeProject(proj.id)}
-                        className={`absolute top-3 right-3 px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] flex items-center gap-1.5 backdrop-blur-md ${
-                          isLiked
-                            ? 'bg-amber-400 text-slate-950 shadow-md'
-                            : 'bg-black/40 text-white hover:bg-black/60'
-                        }`}
-                      >
-                        <Star className={`w-3.5 h-3.5 ${isLiked ? 'fill-slate-950' : ''}`} strokeWidth={1.5} />
-                        <span>{proj.likes} Stars</span>
-                      </button>
+                      <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                        {canModify(proj) && (
+                          <>
+                            <button onClick={() => openEditModal(proj)} className="w-7 h-7 flex items-center justify-center rounded-full bg-black/40 text-white hover:bg-black/60 backdrop-blur-md" title="Edit project">
+                              <Pencil className="w-3.5 h-3.5" strokeWidth={1.5} />
+                            </button>
+                            <button onClick={() => handleDelete(proj)} className="w-7 h-7 flex items-center justify-center rounded-full bg-black/40 text-rose-200 hover:bg-rose-900/80 backdrop-blur-md" title="Delete project">
+                              <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                            </button>
+                          </>
+                        )}
+                        <button
+                          onClick={() => onLikeProject(proj.id)}
+                          className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] flex items-center gap-1.5 backdrop-blur-md ${
+                            isLiked
+                              ? 'bg-amber-400 text-slate-950 shadow-md'
+                              : 'bg-black/40 text-white hover:bg-black/60'
+                          }`}
+                        >
+                          <Star className={`w-3.5 h-3.5 ${isLiked ? 'fill-slate-950' : ''}`} strokeWidth={1.5} />
+                          <span>{proj.likes}</span>
+                        </button>
+                      </div>
 
                       <div className="absolute bottom-3 left-3 right-3 text-white">
                         <p className="text-[11px] text-purple-200 font-medium">By {proj.authorName} ({proj.authorInstitution})</p>
@@ -253,19 +287,21 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
         })}
       </div>
 
-      {/* SUBMIT PROJECT MODAL */}
+      {/* SUBMIT / EDIT PROJECT MODAL */}
       {showSubmitModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="glass-shell max-w-lg w-full">
             <div className="glass-core p-6 sm:p-8 space-y-4 relative max-h-[85vh] overflow-y-auto animate-scaleUp">
               <button
-                onClick={() => setShowSubmitModal(false)}
+                onClick={() => { setShowSubmitModal(false); setEditingProject(null); }}
                 className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 bg-black/[0.04] dark:bg-white/[0.06] rounded-full"
               >
                 <X className="w-4 h-4" strokeWidth={1.5} />
               </button>
 
-              <h2 className="text-lg font-display font-semibold text-slate-900 dark:text-white">Submit Member Project Showcase</h2>
+              <h2 className="text-lg font-display font-semibold text-slate-900 dark:text-white">
+                {editingProject ? 'Edit Project Showcase' : 'Submit Member Project Showcase'}
+              </h2>
 
               <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="col-span-2">
@@ -356,7 +392,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                 <div className="col-span-2 pt-2 flex justify-end gap-3 border-t border-black/5 dark:border-white/10">
                   <button
                     type="button"
-                    onClick={() => setShowSubmitModal(false)}
+                    onClick={() => { setShowSubmitModal(false); setEditingProject(null); }}
                     className="px-4 py-2.5 text-xs font-semibold text-slate-600 dark:text-slate-300 bg-black/[0.04] dark:bg-white/[0.06] rounded-full hover:bg-black/[0.07] dark:hover:bg-white/[0.09]"
                   >
                     Cancel
@@ -365,7 +401,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                     type="submit"
                     className="px-5 py-2.5 text-xs font-semibold text-white bg-[#622569] hover:bg-[#7a2f83] rounded-full shadow"
                   >
-                    Submit Project
+                    {editingProject ? 'Save Changes' : 'Submit Project'}
                   </button>
                 </div>
               </form>

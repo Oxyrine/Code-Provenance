@@ -39,6 +39,7 @@ export interface Event {
   timeline?: 'past' | 'present' | 'future';
   recordingUrl?: string;
   galleryUrls?: string[];
+  createdBy?: string;
 }
 
 export interface Project {
@@ -80,6 +81,7 @@ export interface Opportunity {
   bannerUrl?: string;
   status: 'Open' | 'Closing Soon' | 'Closed';
   timeline?: 'past' | 'present' | 'future';
+  createdBy?: string;
 }
 
 export interface Resource {
@@ -96,6 +98,7 @@ export interface Resource {
   featured?: boolean;
   timeline?: 'past' | 'present' | 'future';
   publishedYear?: string;
+  createdBy?: string;
 }
 
 export interface Announcement {
@@ -107,6 +110,7 @@ export interface Announcement {
   authorRole: string;
   date: string;
   pinned: boolean;
+  createdBy?: string;
 }
 
 export interface AuthResponse {
@@ -114,5 +118,14 @@ export interface AuthResponse {
   user?: User;
   token?: string;
   message?: string;
+}
+
+export interface ActivityEntry {
+  id: string;
+  userId: string;
+  username: string;
+  action: string;
+  detail: string;
+  timestamp: string;
 }
 

@@ -1,7 +1,7 @@
 import express from 'express';
 import crypto from 'crypto';
 import { initDb, saveDb } from './store.js';
-import { User, Event, Project, Opportunity, Resource } from '../src/types.js';
+import { User, Event, Project, Opportunity, Resource, Announcement, ActivityEntry } from '../src/types.js';
 
 function hashPassword(password: string): string {
   const salt = crypto.randomBytes(16).toString('hex');
@@ -25,10 +25,10 @@ export function createApp() {
   let db = initDb();
   const persist = () => saveDb(db);
 
-  // ponytail: in-memory session map, tokens invalidate on server restart / serverless cold start.
-  // On Vercel each instance has its own map, so tokens (and this whole db) don't survive across
-  // instances or redeploys. Fine for a demo; move to a real DB + persisted sessions for production use.
+  // ponytail: in-memory session map and activity log, both reset on restart / serverless cold
+  // start. Fine for a demo; move to a real DB + persisted sessions for production use.
   const sessions = new Map<string, string>(); // token -> userId
+  const activityLog: ActivityEntry[] = [];
 
   function issueToken(userId: string): string {
     const token = crypto.randomBytes(32).toString('hex');
@@ -45,6 +45,37 @@ export function createApp() {
       return null;
     }
     return userId;
+  }
+
+  // Auth + admin role check combined; sends its own error responses.
+  function requireAdmin(req: express.Request, res: express.Response): string | null {
+    const userId = requireAuth(req, res);
+    if (!userId) return null;
+    const user = db.users.find(u => u.id === userId);
+    if (!user || user.role !== 'admin') {
+      res.status(403).json({ success: false, message: 'Admin access required.' });
+      return null;
+    }
+    return userId;
+  }
+
+  function isOwnerOrAdmin(userId: string, ownerId: string | undefined): boolean {
+    if (ownerId === userId) return true;
+    const user = db.users.find(u => u.id === userId);
+    return user?.role === 'admin';
+  }
+
+  function logActivity(userId: string, action: string, detail: string) {
+    const user = db.users.find(u => u.id === userId);
+    activityLog.unshift({
+      id: `act_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      userId,
+      username: user?.username || 'Unknown',
+      action,
+      detail,
+      timestamp: new Date().toISOString(),
+    });
+    if (activityLog.length > 200) activityLog.length = 200;
   }
 
   // --- API ROUTES ---
@@ -94,6 +125,7 @@ export function createApp() {
 
       const { passwordHash, ...safeUser } = newUser;
       const token = issueToken(newUser.id);
+      logActivity(newUser.id, 'Registered', 'Created a new account');
 
       res.status(201).json({
         success: true,
@@ -123,6 +155,7 @@ export function createApp() {
 
       const { passwordHash, ...safeUser } = user;
       const token = issueToken(user.id);
+      logActivity(user.id, 'Logged In', '');
 
       res.json({
         success: true,
@@ -184,6 +217,7 @@ export function createApp() {
 
     db.users[userIndex] = updatedUser;
     persist();
+    logActivity(userId, 'Updated Profile', '');
 
     const { passwordHash, ...safeUser } = updatedUser;
     res.json({ success: true, user: safeUser, message: 'Profile updated successfully!' });
@@ -193,6 +227,41 @@ export function createApp() {
   app.get('/api/members', (_req, res) => {
     const safeMembers = db.users.map(({ passwordHash, ...member }) => member);
     res.json({ success: true, members: safeMembers });
+  });
+
+  // --- ADMIN ROUTES ---
+  app.get('/api/admin/users', (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const safeUsers = db.users.map(({ passwordHash, ...u }) => u);
+    res.json({ success: true, users: safeUsers });
+  });
+
+  app.put('/api/admin/users/:id/role', (req, res) => {
+    const adminId = requireAdmin(req, res);
+    if (!adminId) return;
+
+    const { id } = req.params;
+    const { role } = req.body;
+    if (!['member', 'lead', 'admin'].includes(role)) {
+      return res.status(400).json({ success: false, message: 'Invalid role.' });
+    }
+
+    const target = db.users.find(u => u.id === id);
+    if (!target) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    target.role = role;
+    persist();
+    logActivity(adminId, 'Changed User Role', `${target.username} → ${role}`);
+
+    const { passwordHash, ...safeTarget } = target;
+    res.json({ success: true, user: safeTarget, message: 'Role updated successfully!' });
+  });
+
+  app.get('/api/admin/activity', (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    res.json({ success: true, activity: activityLog });
   });
 
   // --- EVENTS API ---
@@ -227,13 +296,71 @@ export function createApp() {
       maxCapacity: Number(maxCapacity) || 100,
       registeredUserIds: [],
       tags: Array.isArray(tags) ? tags : ['IET', 'Event'],
-      status: 'upcoming'
+      status: 'upcoming',
+      createdBy: userId,
     };
 
     db.events.unshift(newEvent);
     persist();
+    logActivity(userId, 'Created Event', newEvent.title);
 
     res.status(201).json({ success: true, event: newEvent, message: 'Event created successfully!' });
+  });
+
+  app.put('/api/events/:id', (req, res) => {
+    const userId = requireAuth(req, res);
+    if (!userId) return;
+
+    const { id } = req.params;
+    const event = db.events.find(e => e.id === id);
+    if (!event) {
+      return res.status(404).json({ success: false, message: 'Event not found.' });
+    }
+    if (!isOwnerOrAdmin(userId, event.createdBy)) {
+      return res.status(403).json({ success: false, message: 'You can only edit events you created.' });
+    }
+
+    const { title, description, category, date, time, location, isVirtual, virtualLink, speaker, speakerRole, organizer, bannerUrl, maxCapacity, tags } = req.body;
+
+    Object.assign(event, {
+      title: title ?? event.title,
+      description: description ?? event.description,
+      category: category ?? event.category,
+      date: date ?? event.date,
+      time: time ?? event.time,
+      location: location ?? event.location,
+      isVirtual: isVirtual !== undefined ? Boolean(isVirtual) : event.isVirtual,
+      virtualLink: virtualLink ?? event.virtualLink,
+      speaker: speaker ?? event.speaker,
+      speakerRole: speakerRole ?? event.speakerRole,
+      organizer: organizer ?? event.organizer,
+      bannerUrl: bannerUrl ?? event.bannerUrl,
+      maxCapacity: maxCapacity !== undefined ? Number(maxCapacity) : event.maxCapacity,
+      tags: Array.isArray(tags) ? tags : event.tags,
+    });
+
+    persist();
+    logActivity(userId, 'Updated Event', event.title);
+    res.json({ success: true, event, message: 'Event updated successfully!' });
+  });
+
+  app.delete('/api/events/:id', (req, res) => {
+    const userId = requireAuth(req, res);
+    if (!userId) return;
+
+    const { id } = req.params;
+    const idx = db.events.findIndex(e => e.id === id);
+    if (idx === -1) {
+      return res.status(404).json({ success: false, message: 'Event not found.' });
+    }
+    if (!isOwnerOrAdmin(userId, db.events[idx].createdBy)) {
+      return res.status(403).json({ success: false, message: 'You can only delete events you created.' });
+    }
+
+    const [removed] = db.events.splice(idx, 1);
+    persist();
+    logActivity(userId, 'Deleted Event', removed.title);
+    res.json({ success: true, message: 'Event deleted successfully!' });
   });
 
   // Toggle Event Registration
@@ -263,6 +390,7 @@ export function createApp() {
     }
 
     persist();
+    logActivity(userId, isRegistered ? 'Registered for Event' : 'Unregistered from Event', event.title);
 
     res.json({
       success: true,
@@ -310,8 +438,60 @@ export function createApp() {
 
     db.projects.unshift(newProject);
     persist();
+    logActivity(userId, 'Submitted Project', newProject.title);
 
     res.status(201).json({ success: true, project: newProject, message: 'Project submitted successfully!' });
+  });
+
+  app.put('/api/projects/:id', (req, res) => {
+    const userId = requireAuth(req, res);
+    if (!userId) return;
+
+    const { id } = req.params;
+    const project = db.projects.find(p => p.id === id);
+    if (!project) {
+      return res.status(404).json({ success: false, message: 'Project not found.' });
+    }
+    if (!isOwnerOrAdmin(userId, project.authorId)) {
+      return res.status(403).json({ success: false, message: 'You can only edit projects you submitted.' });
+    }
+
+    const { title, tagline, description, domain, teamMembers, githubUrl, demoUrl, tags, imageUrl } = req.body;
+
+    Object.assign(project, {
+      title: title ?? project.title,
+      tagline: tagline ?? project.tagline,
+      description: description ?? project.description,
+      domain: domain ?? project.domain,
+      teamMembers: Array.isArray(teamMembers) ? teamMembers : project.teamMembers,
+      githubUrl: githubUrl ?? project.githubUrl,
+      demoUrl: demoUrl ?? project.demoUrl,
+      tags: Array.isArray(tags) ? tags : project.tags,
+      imageUrl: imageUrl ?? project.imageUrl,
+    });
+
+    persist();
+    logActivity(userId, 'Updated Project', project.title);
+    res.json({ success: true, project, message: 'Project updated successfully!' });
+  });
+
+  app.delete('/api/projects/:id', (req, res) => {
+    const userId = requireAuth(req, res);
+    if (!userId) return;
+
+    const { id } = req.params;
+    const idx = db.projects.findIndex(p => p.id === id);
+    if (idx === -1) {
+      return res.status(404).json({ success: false, message: 'Project not found.' });
+    }
+    if (!isOwnerOrAdmin(userId, db.projects[idx].authorId)) {
+      return res.status(403).json({ success: false, message: 'You can only delete projects you submitted.' });
+    }
+
+    const [removed] = db.projects.splice(idx, 1);
+    persist();
+    logActivity(userId, 'Deleted Project', removed.title);
+    res.json({ success: true, message: 'Project deleted successfully!' });
   });
 
   // Toggle Project Like
@@ -340,6 +520,7 @@ export function createApp() {
     }
 
     persist();
+    logActivity(userId, liked ? 'Liked Project' : 'Unliked Project', project.title);
 
     res.json({ success: true, liked, likesCount: project.likes, project });
   });
@@ -347,6 +528,74 @@ export function createApp() {
   // --- ANNOUNCEMENTS API ---
   app.get('/api/announcements', (_req, res) => {
     res.json({ success: true, announcements: db.announcements });
+  });
+
+  app.post('/api/announcements', (req, res) => {
+    const adminId = requireAdmin(req, res);
+    if (!adminId) return;
+
+    const { title, content, category, pinned } = req.body;
+    if (!title || !content) {
+      return res.status(400).json({ success: false, message: 'Title and content are required.' });
+    }
+
+    const admin = db.users.find(u => u.id === adminId);
+    const newAnn: Announcement = {
+      id: `ann_${Date.now()}`,
+      title,
+      content,
+      category: category || 'General',
+      authorName: admin?.username || 'Chapter Admin',
+      authorRole: 'Chapter Management',
+      date: new Date().toISOString().split('T')[0],
+      pinned: Boolean(pinned),
+      createdBy: adminId,
+    };
+
+    db.announcements.unshift(newAnn);
+    persist();
+    logActivity(adminId, 'Posted Announcement', newAnn.title);
+
+    res.status(201).json({ success: true, announcement: newAnn, message: 'Announcement posted successfully!' });
+  });
+
+  app.put('/api/announcements/:id', (req, res) => {
+    const adminId = requireAdmin(req, res);
+    if (!adminId) return;
+
+    const { id } = req.params;
+    const ann = db.announcements.find(a => a.id === id);
+    if (!ann) {
+      return res.status(404).json({ success: false, message: 'Announcement not found.' });
+    }
+
+    const { title, content, category, pinned } = req.body;
+    Object.assign(ann, {
+      title: title ?? ann.title,
+      content: content ?? ann.content,
+      category: category ?? ann.category,
+      pinned: pinned !== undefined ? Boolean(pinned) : ann.pinned,
+    });
+
+    persist();
+    logActivity(adminId, 'Updated Announcement', ann.title);
+    res.json({ success: true, announcement: ann, message: 'Announcement updated successfully!' });
+  });
+
+  app.delete('/api/announcements/:id', (req, res) => {
+    const adminId = requireAdmin(req, res);
+    if (!adminId) return;
+
+    const { id } = req.params;
+    const idx = db.announcements.findIndex(a => a.id === id);
+    if (idx === -1) {
+      return res.status(404).json({ success: false, message: 'Announcement not found.' });
+    }
+
+    const [removed] = db.announcements.splice(idx, 1);
+    persist();
+    logActivity(adminId, 'Deleted Announcement', removed.title);
+    res.json({ success: true, message: 'Announcement deleted successfully!' });
   });
 
   // --- OPPORTUNITIES API ---
@@ -380,14 +629,72 @@ export function createApp() {
       logoUrl: logoUrl || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=200&auto=format&fit=crop&q=80',
       bannerUrl: bannerUrl || 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800&auto=format&fit=crop&q=80',
       status: status || 'Open',
-      timeline: timeline || 'present'
+      timeline: timeline || 'present',
+      createdBy: userId,
     };
 
     if (!db.opportunities) db.opportunities = [];
     db.opportunities.unshift(newOpportunity);
     persist();
+    logActivity(userId, 'Posted Opportunity', newOpportunity.title);
 
     res.status(201).json({ success: true, opportunity: newOpportunity, message: 'Opportunity posted successfully!' });
+  });
+
+  app.put('/api/opportunities/:id', (req, res) => {
+    const userId = requireAuth(req, res);
+    if (!userId) return;
+
+    const { id } = req.params;
+    const opp = db.opportunities.find(o => o.id === id);
+    if (!opp) {
+      return res.status(404).json({ success: false, message: 'Opportunity not found.' });
+    }
+    if (!isOwnerOrAdmin(userId, opp.createdBy)) {
+      return res.status(403).json({ success: false, message: 'You can only edit opportunities you posted.' });
+    }
+
+    const { title, companyOrOrg, type, location, stipendOrSalary, deadline, description, applyUrl, requirements, tags, logoUrl, bannerUrl, status, timeline } = req.body;
+
+    Object.assign(opp, {
+      title: title ?? opp.title,
+      companyOrOrg: companyOrOrg ?? opp.companyOrOrg,
+      type: type ?? opp.type,
+      location: location ?? opp.location,
+      stipendOrSalary: stipendOrSalary ?? opp.stipendOrSalary,
+      deadline: deadline ?? opp.deadline,
+      description: description ?? opp.description,
+      applyUrl: applyUrl ?? opp.applyUrl,
+      requirements: Array.isArray(requirements) ? requirements : opp.requirements,
+      tags: Array.isArray(tags) ? tags : opp.tags,
+      logoUrl: logoUrl ?? opp.logoUrl,
+      bannerUrl: bannerUrl ?? opp.bannerUrl,
+      status: status ?? opp.status,
+      timeline: timeline ?? opp.timeline,
+    });
+
+    persist();
+    logActivity(userId, 'Updated Opportunity', opp.title);
+    res.json({ success: true, opportunity: opp, message: 'Opportunity updated successfully!' });
+  });
+
+  app.delete('/api/opportunities/:id', (req, res) => {
+    const userId = requireAuth(req, res);
+    if (!userId) return;
+
+    const { id } = req.params;
+    const idx = db.opportunities.findIndex(o => o.id === id);
+    if (idx === -1) {
+      return res.status(404).json({ success: false, message: 'Opportunity not found.' });
+    }
+    if (!isOwnerOrAdmin(userId, db.opportunities[idx].createdBy)) {
+      return res.status(403).json({ success: false, message: 'You can only delete opportunities you posted.' });
+    }
+
+    const [removed] = db.opportunities.splice(idx, 1);
+    persist();
+    logActivity(userId, 'Deleted Opportunity', removed.title);
+    res.json({ success: true, message: 'Opportunity deleted successfully!' });
   });
 
   // --- RESOURCES API ---
@@ -418,14 +725,69 @@ export function createApp() {
       level: level || 'All Levels',
       featured: Boolean(featured),
       timeline: timeline || 'present',
-      publishedYear: String(new Date().getFullYear())
+      publishedYear: String(new Date().getFullYear()),
+      createdBy: userId,
     };
 
     if (!db.resources) db.resources = [];
     db.resources.unshift(newResource);
     persist();
+    logActivity(userId, 'Shared Resource', newResource.title);
 
     res.status(201).json({ success: true, resource: newResource, message: 'Resource shared with community!' });
+  });
+
+  app.put('/api/resources/:id', (req, res) => {
+    const userId = requireAuth(req, res);
+    if (!userId) return;
+
+    const { id } = req.params;
+    const resource = db.resources.find(r => r.id === id);
+    if (!resource) {
+      return res.status(404).json({ success: false, message: 'Resource not found.' });
+    }
+    if (!isOwnerOrAdmin(userId, resource.createdBy)) {
+      return res.status(403).json({ success: false, message: 'You can only edit resources you shared.' });
+    }
+
+    const { title, description, category, type, authorOrProvider, url, thumbnailUrl, tags, level, featured, timeline } = req.body;
+
+    Object.assign(resource, {
+      title: title ?? resource.title,
+      description: description ?? resource.description,
+      category: category ?? resource.category,
+      type: type ?? resource.type,
+      authorOrProvider: authorOrProvider ?? resource.authorOrProvider,
+      url: url ?? resource.url,
+      thumbnailUrl: thumbnailUrl ?? resource.thumbnailUrl,
+      tags: Array.isArray(tags) ? tags : resource.tags,
+      level: level ?? resource.level,
+      featured: featured !== undefined ? Boolean(featured) : resource.featured,
+      timeline: timeline ?? resource.timeline,
+    });
+
+    persist();
+    logActivity(userId, 'Updated Resource', resource.title);
+    res.json({ success: true, resource, message: 'Resource updated successfully!' });
+  });
+
+  app.delete('/api/resources/:id', (req, res) => {
+    const userId = requireAuth(req, res);
+    if (!userId) return;
+
+    const { id } = req.params;
+    const idx = db.resources.findIndex(r => r.id === id);
+    if (idx === -1) {
+      return res.status(404).json({ success: false, message: 'Resource not found.' });
+    }
+    if (!isOwnerOrAdmin(userId, db.resources[idx].createdBy)) {
+      return res.status(403).json({ success: false, message: 'You can only delete resources you shared.' });
+    }
+
+    const [removed] = db.resources.splice(idx, 1);
+    persist();
+    logActivity(userId, 'Deleted Resource', removed.title);
+    res.json({ success: true, message: 'Resource deleted successfully!' });
   });
 
   return app;

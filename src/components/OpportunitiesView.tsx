@@ -1,42 +1,49 @@
 import React, { useState } from 'react';
 import { Opportunity, User } from '../types';
-import { MapPin, DollarSign, PlusCircle, X } from 'lucide-react';
+import { MapPin, DollarSign, PlusCircle, X, Pencil, Trash2 } from 'lucide-react';
 import { Reveal } from './Reveal';
 
 interface OpportunitiesViewProps {
   opportunities: Opportunity[];
   user: User | null;
   onCreateOpportunity: (oppData: Partial<Opportunity>) => Promise<boolean>;
+  onUpdateOpportunity: (oppId: string, oppData: Partial<Opportunity>) => Promise<boolean>;
+  onDeleteOpportunity: (oppId: string) => void;
   searchQuery: string;
 }
+
+const emptyOppForm = {
+  title: '',
+  companyOrOrg: '',
+  type: 'Internship' as Opportunity['type'],
+  location: 'Remote',
+  stipendOrSalary: '',
+  deadline: '',
+  description: '',
+  applyUrl: '',
+  requirementsStr: '',
+  tagsStr: '',
+  logoUrl: '',
+  bannerUrl: '',
+  status: 'Open' as 'Open' | 'Closed' | 'Upcoming',
+  timeline: 'present' as 'past' | 'present' | 'future',
+};
 
 export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({
   opportunities,
   user,
   onCreateOpportunity,
+  onUpdateOpportunity,
+  onDeleteOpportunity,
   searchQuery,
 }) => {
   const [selectedType, setSelectedType] = useState<string>('All');
   const [selectedTimeline, setSelectedTimeline] = useState<'all' | 'present' | 'past' | 'future'>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingOpp, setEditingOpp] = useState<Opportunity | null>(null);
   const [activeOppModal, setActiveOppModal] = useState<Opportunity | null>(null);
 
-  const [newOppData, setNewOppData] = useState({
-    title: '',
-    companyOrOrg: '',
-    type: 'Internship' as Opportunity['type'],
-    location: 'Remote',
-    stipendOrSalary: '',
-    deadline: '',
-    description: '',
-    applyUrl: '',
-    requirementsStr: '',
-    tagsStr: '',
-    logoUrl: '',
-    bannerUrl: '',
-    status: 'Open' as 'Open' | 'Closed' | 'Upcoming',
-    timeline: 'present' as 'past' | 'present' | 'future',
-  });
+  const [newOppData, setNewOppData] = useState(emptyOppForm);
 
   const types = ['All', 'Internship', 'Scholarship', 'Research Grant', 'Mentorship', 'Career Fair'];
   const timelines: { id: 'all' | 'present' | 'past' | 'future'; label: string }[] = [
@@ -59,6 +66,41 @@ export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({
     return matchesType && matchesTimeline && matchesSearch;
   });
 
+  const canModify = (opp: Opportunity) => !!user && (user.id === opp.createdBy || user.role === 'admin');
+
+  const openCreateModal = () => {
+    setEditingOpp(null);
+    setNewOppData(emptyOppForm);
+    setShowCreateModal(true);
+  };
+
+  const openEditModal = (opp: Opportunity) => {
+    setEditingOpp(opp);
+    setNewOppData({
+      title: opp.title,
+      companyOrOrg: opp.companyOrOrg,
+      type: opp.type,
+      location: opp.location,
+      stipendOrSalary: opp.stipendOrSalary || '',
+      deadline: opp.deadline,
+      description: opp.description,
+      applyUrl: opp.applyUrl,
+      requirementsStr: opp.requirements.join('\n'),
+      tagsStr: opp.tags.join(', '),
+      logoUrl: opp.logoUrl || '',
+      bannerUrl: opp.bannerUrl || '',
+      status: opp.status as 'Open' | 'Closed' | 'Upcoming',
+      timeline: opp.timeline || 'present',
+    });
+    setShowCreateModal(true);
+  };
+
+  const handleDelete = (opp: Opportunity) => {
+    if (window.confirm(`Delete "${opp.title}"? This cannot be undone.`)) {
+      onDeleteOpportunity(opp.id);
+    }
+  };
+
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newOppData.title || !newOppData.companyOrOrg || !newOppData.description || !newOppData.applyUrl) return;
@@ -71,19 +113,14 @@ export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({
       ? newOppData.tagsStr.split(',').map(s => s.trim()).filter(Boolean)
       : ['IET', newOppData.type];
 
-    const ok = await onCreateOpportunity({
-      ...newOppData,
-      requirements,
-      tags,
-    });
+    const ok = editingOpp
+      ? await onUpdateOpportunity(editingOpp.id, { ...newOppData, requirements, tags })
+      : await onCreateOpportunity({ ...newOppData, requirements, tags });
 
     if (ok) {
       setShowCreateModal(false);
-      setNewOppData({
-        title: '', companyOrOrg: '', type: 'Internship', location: 'Remote', stipendOrSalary: '',
-        deadline: '', description: '', applyUrl: '', requirementsStr: '', tagsStr: '',
-        logoUrl: '', bannerUrl: '', status: 'Open', timeline: 'present',
-      });
+      setEditingOpp(null);
+      setNewOppData(emptyOppForm);
     }
   };
 
@@ -101,7 +138,7 @@ export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({
 
             {user && (
               <button
-                onClick={() => setShowCreateModal(true)}
+                onClick={openCreateModal}
                 className="cta-pill bg-[#622569] hover:bg-[#7a2f83] text-white group"
               >
                 <span>Post Opportunity</span>
@@ -172,6 +209,17 @@ export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({
                           {opp.type}
                         </span>
                       </div>
+
+                      {canModify(opp) && (
+                        <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                          <button onClick={() => openEditModal(opp)} className="w-7 h-7 flex items-center justify-center rounded-full bg-black/40 text-white hover:bg-black/60 backdrop-blur-md" title="Edit opportunity">
+                            <Pencil className="w-3.5 h-3.5" strokeWidth={1.5} />
+                          </button>
+                          <button onClick={() => handleDelete(opp)} className="w-7 h-7 flex items-center justify-center rounded-full bg-black/40 text-rose-200 hover:bg-rose-900/80 backdrop-blur-md" title="Delete opportunity">
+                            <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                          </button>
+                        </div>
+                      )}
 
                       <div className="absolute bottom-3 left-3 text-white text-xs font-semibold">
                         {opp.companyOrOrg}
@@ -319,19 +367,21 @@ export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({
         </div>
       )}
 
-      {/* CREATE OPPORTUNITY MODAL */}
+      {/* CREATE / EDIT OPPORTUNITY MODAL */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="glass-shell max-w-lg w-full">
             <div className="glass-core p-6 sm:p-8 space-y-4 relative max-h-[85vh] overflow-y-auto animate-scaleUp">
               <button
-                onClick={() => setShowCreateModal(false)}
+                onClick={() => { setShowCreateModal(false); setEditingOpp(null); }}
                 className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 bg-black/[0.04] dark:bg-white/[0.06] rounded-full"
               >
                 <X className="w-4 h-4" strokeWidth={1.5} />
               </button>
 
-              <h2 className="text-lg font-display font-semibold text-slate-900 dark:text-white">Post an Opportunity</h2>
+              <h2 className="text-lg font-display font-semibold text-slate-900 dark:text-white">
+                {editingOpp ? 'Edit Opportunity' : 'Post an Opportunity'}
+              </h2>
 
               <form onSubmit={handleCreateSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="col-span-2">
@@ -451,7 +501,7 @@ export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({
                 <div className="col-span-2 pt-2 flex justify-end gap-3 border-t border-black/5 dark:border-white/10">
                   <button
                     type="button"
-                    onClick={() => setShowCreateModal(false)}
+                    onClick={() => { setShowCreateModal(false); setEditingOpp(null); }}
                     className="px-4 py-2.5 text-xs font-semibold text-slate-600 dark:text-slate-300 bg-black/[0.04] dark:bg-white/[0.06] rounded-full hover:bg-black/[0.07] dark:hover:bg-white/[0.09]"
                   >
                     Cancel
@@ -460,7 +510,7 @@ export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({
                     type="submit"
                     className="px-5 py-2.5 text-xs font-semibold text-white bg-[#622569] hover:bg-[#7a2f83] rounded-full shadow"
                   >
-                    Publish Opportunity
+                    {editingOpp ? 'Save Changes' : 'Publish Opportunity'}
                   </button>
                 </div>
               </form>

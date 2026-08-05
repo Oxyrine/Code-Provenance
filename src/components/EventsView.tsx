@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Event, User } from '../types';
-import { Calendar, Clock, MapPin, Users, CheckCircle2, PlusCircle, Video, Link, X } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, CheckCircle2, PlusCircle, Video, Link, X, Pencil, Trash2 } from 'lucide-react';
 import { Reveal } from './Reveal';
 
 interface EventsViewProps {
@@ -8,35 +8,41 @@ interface EventsViewProps {
   user: User | null;
   onRegisterEvent: (eventId: string) => void;
   onCreateEvent: (eventData: Partial<Event>) => Promise<boolean>;
+  onUpdateEvent: (eventId: string, eventData: Partial<Event>) => Promise<boolean>;
+  onDeleteEvent: (eventId: string) => void;
   searchQuery: string;
 }
+
+const emptyEventForm = {
+  title: '',
+  description: '',
+  category: 'Workshop' as Event['category'],
+  date: '',
+  time: '10:00 AM - 01:00 PM',
+  location: '',
+  isVirtual: false,
+  virtualLink: '',
+  speaker: '',
+  speakerRole: '',
+  maxCapacity: 100,
+};
 
 export const EventsView: React.FC<EventsViewProps> = ({
   events,
   user,
   onRegisterEvent,
   onCreateEvent,
+  onUpdateEvent,
+  onDeleteEvent,
   searchQuery,
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedTimeline, setSelectedTimeline] = useState<'all' | 'future' | 'present' | 'past'>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [activeEventModal, setActiveEventModal] = useState<Event | null>(null);
 
-  // New Event Form State
-  const [newEventData, setNewEventData] = useState({
-    title: '',
-    description: '',
-    category: 'Workshop' as Event['category'],
-    date: '',
-    time: '10:00 AM - 01:00 PM',
-    location: '',
-    isVirtual: false,
-    virtualLink: '',
-    speaker: '',
-    speakerRole: '',
-    maxCapacity: 100,
-  });
+  const [newEventData, setNewEventData] = useState(emptyEventForm);
 
   const categories = ['All', 'Hackathon', 'Workshop', 'Webinar', 'Guest Lecture', 'Conference'];
   const timelines: { id: 'all' | 'future' | 'present' | 'past'; label: string }[] = [
@@ -58,26 +64,48 @@ export const EventsView: React.FC<EventsViewProps> = ({
     return matchesCat && matchesTimeline && matchesSearch;
   });
 
+  const canModify = (evt: Event) => !!user && (user.id === evt.createdBy || user.role === 'admin');
 
-  const handleCreateSubmit = async (e: React.FormEvent) => {
+  const openCreateModal = () => {
+    setEditingEvent(null);
+    setNewEventData(emptyEventForm);
+    setShowCreateModal(true);
+  };
+
+  const openEditModal = (evt: Event) => {
+    setEditingEvent(evt);
+    setNewEventData({
+      title: evt.title,
+      description: evt.description,
+      category: evt.category,
+      date: evt.date,
+      time: evt.time,
+      location: evt.location,
+      isVirtual: evt.isVirtual,
+      virtualLink: evt.virtualLink || '',
+      speaker: evt.speaker || '',
+      speakerRole: evt.speakerRole || '',
+      maxCapacity: evt.maxCapacity,
+    });
+    setShowCreateModal(true);
+  };
+
+  const handleDelete = (evt: Event) => {
+    if (window.confirm(`Delete "${evt.title}"? This cannot be undone.`)) {
+      onDeleteEvent(evt.id);
+    }
+  };
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEventData.title || !newEventData.date) return;
-    const ok = await onCreateEvent(newEventData);
+    const ok = editingEvent
+      ? await onUpdateEvent(editingEvent.id, newEventData)
+      : await onCreateEvent(newEventData);
     if (ok) {
       setShowCreateModal(false);
-      setNewEventData({
-        title: '',
-        description: '',
-        category: 'Workshop',
-        date: '',
-        time: '10:00 AM - 01:00 PM',
-        location: '',
-        isVirtual: false,
-        virtualLink: '',
-        speaker: '',
-        speakerRole: '',
-        maxCapacity: 100,
-      });
+      setEditingEvent(null);
+      setNewEventData(emptyEventForm);
     }
   };
 
@@ -95,7 +123,7 @@ export const EventsView: React.FC<EventsViewProps> = ({
 
             {user && (
               <button
-                onClick={() => setShowCreateModal(true)}
+                onClick={openCreateModal}
                 className="cta-pill bg-[#622569] hover:bg-[#7a2f83] text-white group"
               >
                 <span>Host Event</span>
@@ -194,12 +222,24 @@ export const EventsView: React.FC<EventsViewProps> = ({
 
                     {/* Content */}
                     <div className="p-5 space-y-3">
-                      <h3
-                        onClick={() => setActiveEventModal(evt)}
-                        className="font-display font-semibold text-slate-900 dark:text-white text-base leading-snug hover:text-[#622569] dark:hover:text-purple-300 cursor-pointer line-clamp-2"
-                      >
-                        {evt.title}
-                      </h3>
+                      <div className="flex items-start justify-between gap-2">
+                        <h3
+                          onClick={() => setActiveEventModal(evt)}
+                          className="font-display font-semibold text-slate-900 dark:text-white text-base leading-snug hover:text-[#622569] dark:hover:text-purple-300 cursor-pointer line-clamp-2"
+                        >
+                          {evt.title}
+                        </h3>
+                        {canModify(evt) && (
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button onClick={() => openEditModal(evt)} className="p-1.5 text-slate-400 hover:text-[#622569] dark:hover:text-purple-300 rounded-full hover:bg-black/[0.04] dark:hover:bg-white/[0.06]" title="Edit event">
+                              <Pencil className="w-3.5 h-3.5" strokeWidth={1.5} />
+                            </button>
+                            <button onClick={() => handleDelete(evt)} className="p-1.5 text-slate-400 hover:text-rose-600 rounded-full hover:bg-rose-50 dark:hover:bg-rose-950/40" title="Delete event">
+                              <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
 
                       <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2 leading-relaxed">
                         {evt.description}
@@ -309,21 +349,23 @@ export const EventsView: React.FC<EventsViewProps> = ({
         </div>
       )}
 
-      {/* CREATE EVENT MODAL */}
+      {/* CREATE / EDIT EVENT MODAL */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="glass-shell max-w-lg w-full">
             <div className="glass-core p-6 sm:p-8 space-y-4 relative max-h-[85vh] overflow-y-auto animate-scaleUp">
               <button
-                onClick={() => setShowCreateModal(false)}
+                onClick={() => { setShowCreateModal(false); setEditingEvent(null); }}
                 className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 bg-black/[0.04] dark:bg-white/[0.06] rounded-full"
               >
                 <X className="w-4 h-4" strokeWidth={1.5} />
               </button>
 
-              <h2 className="text-lg font-display font-semibold text-slate-900 dark:text-white">Publish Chapter Event</h2>
+              <h2 className="text-lg font-display font-semibold text-slate-900 dark:text-white">
+                {editingEvent ? 'Edit Chapter Event' : 'Publish Chapter Event'}
+              </h2>
 
-              <form onSubmit={handleCreateSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <form onSubmit={handleFormSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="col-span-2">
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Event Title *</label>
                   <input
@@ -408,7 +450,7 @@ export const EventsView: React.FC<EventsViewProps> = ({
                 <div className="col-span-2 pt-2 flex justify-end gap-3 border-t border-black/5 dark:border-white/10">
                   <button
                     type="button"
-                    onClick={() => setShowCreateModal(false)}
+                    onClick={() => { setShowCreateModal(false); setEditingEvent(null); }}
                     className="px-4 py-2.5 text-xs font-semibold text-slate-600 dark:text-slate-300 bg-black/[0.04] dark:bg-white/[0.06] rounded-full hover:bg-black/[0.07] dark:hover:bg-white/[0.09]"
                   >
                     Cancel
@@ -417,7 +459,7 @@ export const EventsView: React.FC<EventsViewProps> = ({
                     type="submit"
                     className="px-5 py-2.5 text-xs font-semibold text-white bg-[#622569] hover:bg-[#7a2f83] rounded-full shadow"
                   >
-                    Publish Event
+                    {editingEvent ? 'Save Changes' : 'Publish Event'}
                   </button>
                 </div>
               </form>

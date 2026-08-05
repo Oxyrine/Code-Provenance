@@ -1,6 +1,14 @@
 import React, { useState } from 'react';
 import { User } from '../types';
-import { ShieldCheck, LogOut, Search, Bell, Sparkles, User as UserIcon, Moon, Sun } from 'lucide-react';
+import { ShieldCheck, LogOut, Search, Bell, Sparkles, User as UserIcon, Moon, Sun, AlertTriangle, CheckCircle2, Info } from 'lucide-react';
+
+interface NotificationItem {
+  id: string;
+  message: string;
+  type: 'info' | 'warning' | 'success';
+  read: boolean;
+  timestamp: string;
+}
 
 interface NavbarProps {
   user: User | null;
@@ -11,9 +19,11 @@ interface NavbarProps {
   setSearchQuery: (query: string) => void;
   darkMode: boolean;
   onToggleDarkMode: () => void;
+  notifications: NotificationItem[];
+  onOpenNotifications: () => void;
 }
 
-const mobileNavItems = [
+const baseMobileNavItems = [
   { id: 'dashboard', label: 'Dashboard' },
   { id: 'events', label: 'Events & Workshops' },
   { id: 'projects', label: 'Member Projects' },
@@ -32,8 +42,24 @@ export const Navbar: React.FC<NavbarProps> = ({
   setSearchQuery,
   darkMode,
   onToggleDarkMode,
+  notifications,
+  onOpenNotifications,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  const toggleNotifications = () => {
+    setNotifOpen(prev => {
+      const next = !prev;
+      if (next) onOpenNotifications();
+      return next;
+    });
+  };
+
+  const mobileNavItems = user?.role === 'admin'
+    ? [...baseMobileNavItems, { id: 'admin', label: 'Admin Panel' }]
+    : baseMobileNavItems;
 
   const handleNavClick = (tabId: string) => {
     if (tabId === 'profile' && !user) {
@@ -110,14 +136,50 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               {user ? (
                 <>
-                  <button
-                    onClick={() => handleNavClick('announcements')}
-                    className="relative w-9 h-9 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-[#622569] dark:hover:text-purple-300 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
-                    title="Notifications"
-                  >
-                    <Bell className="w-4 h-4" strokeWidth={1.5} />
-                    <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-rose-500 rounded-full"></span>
-                  </button>
+                  <div className="relative">
+                    <button
+                      onClick={toggleNotifications}
+                      className="relative w-9 h-9 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-[#622569] dark:hover:text-purple-300 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                      title="Notifications"
+                    >
+                      <Bell className="w-4 h-4" strokeWidth={1.5} />
+                      {unreadCount > 0 && (
+                        <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-rose-500 rounded-full"></span>
+                      )}
+                    </button>
+
+                    {notifOpen && (
+                      <>
+                        <div className="fixed inset-0 z-30" onClick={() => setNotifOpen(false)} />
+                        <div className="absolute right-0 top-12 z-40 w-80 glass-shell">
+                          <div className="glass-core p-3 max-h-96 overflow-y-auto">
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500 px-2 pb-2">Notifications</p>
+                            {notifications.length === 0 ? (
+                              <p className="text-xs text-slate-400 dark:text-slate-500 italic px-2 py-3">No notifications yet.</p>
+                            ) : (
+                              <div className="space-y-1">
+                                {notifications.map((n) => {
+                                  const Icon = n.type === 'warning' ? AlertTriangle : n.type === 'success' ? CheckCircle2 : Info;
+                                  const iconColor = n.type === 'warning' ? 'text-amber-500' : n.type === 'success' ? 'text-emerald-500' : 'text-purple-500';
+                                  return (
+                                    <div key={n.id} className="flex items-start gap-2.5 p-2.5 rounded-xl bg-black/[0.02] dark:bg-white/[0.03]">
+                                      <Icon className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${iconColor}`} strokeWidth={1.5} />
+                                      <div className="min-w-0">
+                                        <p className="text-xs text-slate-700 dark:text-slate-200">{n.message}</p>
+                                        <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
+                                          {new Date(n.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
 
                   <button
                     onClick={() => handleNavClick('profile')}

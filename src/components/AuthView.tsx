@@ -212,7 +212,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                       onClick={() => handleQuickDemoLogin('venkatns2008@gmail.com')}
                       className="py-2.5 px-3 bg-purple-50 dark:bg-purple-500/10 hover:bg-purple-100 dark:hover:bg-purple-500/20 text-[#622569] dark:text-purple-300 text-xs font-medium rounded-xl transition-colors"
                     >
-                      Login as Chapter Lead
+                      Login as Admin
                     </button>
                     <button
                       type="button"

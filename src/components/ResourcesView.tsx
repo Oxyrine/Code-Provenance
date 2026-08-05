@@ -1,38 +1,45 @@
 import React, { useState } from 'react';
 import { Resource, User } from '../types';
-import { PlusCircle, X } from 'lucide-react';
+import { PlusCircle, X, Pencil, Trash2 } from 'lucide-react';
 import { Reveal } from './Reveal';
 
 interface ResourcesViewProps {
   resources: Resource[];
   user: User | null;
   onCreateResource: (resData: Partial<Resource>) => Promise<boolean>;
+  onUpdateResource: (resId: string, resData: Partial<Resource>) => Promise<boolean>;
+  onDeleteResource: (resId: string) => void;
   searchQuery: string;
 }
+
+const emptyResourceForm = {
+  title: '',
+  description: '',
+  category: 'Engineering & Tech' as Resource['category'],
+  type: 'E-Book' as Resource['type'],
+  authorOrProvider: '',
+  url: '',
+  thumbnailUrl: '',
+  level: 'All Levels' as Resource['level'],
+  tagsStr: '',
+  timeline: 'present' as 'past' | 'present' | 'future',
+};
 
 export const ResourcesView: React.FC<ResourcesViewProps> = ({
   resources,
   user,
   onCreateResource,
+  onUpdateResource,
+  onDeleteResource,
   searchQuery,
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedTimeline, setSelectedTimeline] = useState<'all' | 'present' | 'past' | 'future'>('all');
   const [showShareModal, setShowShareModal] = useState(false);
+  const [editingResource, setEditingResource] = useState<Resource | null>(null);
   const [activeResModal, setActiveResModal] = useState<Resource | null>(null);
 
-  const [newResData, setNewResData] = useState({
-    title: '',
-    description: '',
-    category: 'Engineering & Tech' as Resource['category'],
-    type: 'E-Book' as Resource['type'],
-    authorOrProvider: '',
-    url: '',
-    thumbnailUrl: '',
-    level: 'All Levels' as Resource['level'],
-    tagsStr: '',
-    timeline: 'present' as 'past' | 'present' | 'future',
-  });
+  const [newResData, setNewResData] = useState(emptyResourceForm);
 
   const categories = ['All', 'Engineering & Tech', 'Academic & Research', 'Career & Skill', 'IET Standards', 'Project Templates'];
   const timelines: { id: 'all' | 'present' | 'past' | 'future'; label: string }[] = [
@@ -55,6 +62,37 @@ export const ResourcesView: React.FC<ResourcesViewProps> = ({
     return matchesCat && matchesTimeline && matchesSearch;
   });
 
+  const canModify = (res: Resource) => !!user && (user.id === res.createdBy || user.role === 'admin');
+
+  const openCreateModal = () => {
+    setEditingResource(null);
+    setNewResData(emptyResourceForm);
+    setShowShareModal(true);
+  };
+
+  const openEditModal = (res: Resource) => {
+    setEditingResource(res);
+    setNewResData({
+      title: res.title,
+      description: res.description,
+      category: res.category,
+      type: res.type,
+      authorOrProvider: res.authorOrProvider,
+      url: res.url,
+      thumbnailUrl: res.thumbnailUrl,
+      level: res.level,
+      tagsStr: res.tags.join(', '),
+      timeline: res.timeline || 'present',
+    });
+    setShowShareModal(true);
+  };
+
+  const handleDelete = (res: Resource) => {
+    if (window.confirm(`Delete "${res.title}"? This cannot be undone.`)) {
+      onDeleteResource(res.id);
+    }
+  };
+
   const handleShareSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newResData.title || !newResData.description || !newResData.url) return;
@@ -63,18 +101,20 @@ export const ResourcesView: React.FC<ResourcesViewProps> = ({
       ? newResData.tagsStr.split(',').map(s => s.trim()).filter(Boolean)
       : [newResData.category, newResData.type];
 
-    const ok = await onCreateResource({
+    const payload = {
       ...newResData,
       authorOrProvider: newResData.authorOrProvider || (user ? user.username : 'IET Member'),
       tags,
-    });
+    };
+
+    const ok = editingResource
+      ? await onUpdateResource(editingResource.id, payload)
+      : await onCreateResource(payload);
 
     if (ok) {
       setShowShareModal(false);
-      setNewResData({
-        title: '', description: '', category: 'Engineering & Tech', type: 'E-Book',
-        authorOrProvider: '', url: '', thumbnailUrl: '', level: 'All Levels', tagsStr: '', timeline: 'present',
-      });
+      setEditingResource(null);
+      setNewResData(emptyResourceForm);
     }
   };
 
@@ -92,7 +132,7 @@ export const ResourcesView: React.FC<ResourcesViewProps> = ({
 
             {user && (
               <button
-                onClick={() => setShowShareModal(true)}
+                onClick={openCreateModal}
                 className="cta-pill bg-[#622569] hover:bg-[#7a2f83] text-white group"
               >
                 <span>Share Resource</span>
@@ -161,9 +201,21 @@ export const ResourcesView: React.FC<ResourcesViewProps> = ({
                       <span className="absolute top-3 left-3 bg-white/90 backdrop-blur-md text-[#622569] text-[10px] font-semibold px-3 py-1 rounded-full uppercase tracking-wider">
                         {res.type}
                       </span>
-                      <span className="absolute top-3 right-3 bg-slate-900/80 text-white text-[10px] font-semibold px-2.5 py-1 rounded-full">
-                        {res.level}
-                      </span>
+
+                      {canModify(res) ? (
+                        <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                          <button onClick={() => openEditModal(res)} className="w-7 h-7 flex items-center justify-center rounded-full bg-black/40 text-white hover:bg-black/60 backdrop-blur-md" title="Edit resource">
+                            <Pencil className="w-3.5 h-3.5" strokeWidth={1.5} />
+                          </button>
+                          <button onClick={() => handleDelete(res)} className="w-7 h-7 flex items-center justify-center rounded-full bg-black/40 text-rose-200 hover:bg-rose-900/80 backdrop-blur-md" title="Delete resource">
+                            <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="absolute top-3 right-3 bg-slate-900/80 text-white text-[10px] font-semibold px-2.5 py-1 rounded-full">
+                          {res.level}
+                        </span>
+                      )}
                     </div>
 
                     <div className="p-5 space-y-1.5">
@@ -260,19 +312,21 @@ export const ResourcesView: React.FC<ResourcesViewProps> = ({
         </div>
       )}
 
-      {/* SHARE RESOURCE MODAL */}
+      {/* SHARE / EDIT RESOURCE MODAL */}
       {showShareModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="glass-shell max-w-lg w-full">
             <div className="glass-core p-6 sm:p-8 space-y-4 relative max-h-[85vh] overflow-y-auto animate-scaleUp">
               <button
-                onClick={() => setShowShareModal(false)}
+                onClick={() => { setShowShareModal(false); setEditingResource(null); }}
                 className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 bg-black/[0.04] dark:bg-white/[0.06] rounded-full"
               >
                 <X className="w-4 h-4" strokeWidth={1.5} />
               </button>
 
-              <h2 className="text-lg font-display font-semibold text-slate-900 dark:text-white">Share a Learning Resource</h2>
+              <h2 className="text-lg font-display font-semibold text-slate-900 dark:text-white">
+                {editingResource ? 'Edit Learning Resource' : 'Share a Learning Resource'}
+              </h2>
 
               <form onSubmit={handleShareSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="col-span-2">
@@ -366,7 +420,7 @@ export const ResourcesView: React.FC<ResourcesViewProps> = ({
                 <div className="col-span-2 pt-2 flex justify-end gap-3 border-t border-black/5 dark:border-white/10">
                   <button
                     type="button"
-                    onClick={() => setShowShareModal(false)}
+                    onClick={() => { setShowShareModal(false); setEditingResource(null); }}
                     className="px-4 py-2.5 text-xs font-semibold text-slate-600 dark:text-slate-300 bg-black/[0.04] dark:bg-white/[0.06] rounded-full hover:bg-black/[0.07] dark:hover:bg-white/[0.09]"
                   >
                     Cancel
@@ -375,7 +429,7 @@ export const ResourcesView: React.FC<ResourcesViewProps> = ({
                     type="submit"
                     className="px-5 py-2.5 text-xs font-semibold text-white bg-[#622569] hover:bg-[#7a2f83] rounded-full shadow"
                   >
-                    Publish Resource
+                    {editingResource ? 'Save Changes' : 'Publish Resource'}
                   </button>
                 </div>
               </form>
