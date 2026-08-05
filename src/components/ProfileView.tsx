@@ -73,21 +73,21 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateProfile 
           <div className="glass-core overflow-hidden">
 
             {/* Cover Banner */}
-            <div className="h-40 bg-gradient-to-r from-[#622569] via-[#9b51e0] to-amber-400 relative rounded-t-[calc(2rem-0.375rem)]">
-              <div className="absolute top-4 right-4 eyebrow bg-white/90 backdrop-blur-md text-[#622569] normal-case tracking-normal">
+            <div className="h-40 sm:h-48 bg-gradient-to-r from-[#622569] via-[#9b51e0] to-amber-400 relative rounded-t-[calc(2rem-0.375rem)]">
+              <div className="absolute top-6 right-6 sm:top-8 sm:right-10 eyebrow bg-white/90 backdrop-blur-md text-[#622569] normal-case tracking-normal shadow-sm">
                 <Sparkles className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.5} />
                 <span>Member Record Verified</span>
               </div>
             </div>
 
             {/* Info Grid */}
-            <div className="p-8 relative pt-0">
-              <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 -mt-16 mb-6">
+            <div className="px-6 sm:px-10 pb-10 relative pt-0">
+              <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 -mt-10 sm:-mt-12 mb-8">
                 <div className="flex items-end gap-5">
                   <img
                     src={user.avatarUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'}
                     alt={user.username}
-                    className="w-28 h-28 rounded-3xl object-cover border-4 border-white dark:border-[#0a0a0d] shadow-md bg-white shrink-0"
+                    className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl object-cover border-4 border-white dark:border-[#0a0a0d] shadow-md bg-white shrink-0"
                     referrerPolicy="no-referrer"
                   />
                   <div className="pb-1">
