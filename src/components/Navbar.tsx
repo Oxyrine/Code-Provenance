@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { User } from '../types';
-import { ShieldCheck, LogOut, Search, Bell, Sparkles, User as UserIcon, Moon, Sun, AlertTriangle, CheckCircle2, Info } from 'lucide-react';
+import { ShieldCheck, LogOut, Search, X, Bell, Sparkles, User as UserIcon, Moon, Sun, AlertTriangle, CheckCircle2, Info } from 'lucide-react';
 
 interface NotificationItem {
   id: string;
@@ -47,6 +47,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const toggleNotifications = () => {
@@ -126,6 +127,15 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             {/* User Actions */}
             <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setMobileSearchOpen((v) => !v)}
+                className="w-9 h-9 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-[#622569] dark:hover:text-purple-300 rounded-full hover:bg-black/5 dark:hover:bg-white/10 md:hidden transition-colors"
+                aria-label={mobileSearchOpen ? 'Close search' : 'Open search'}
+                title="Search"
+              >
+                {mobileSearchOpen ? <X className="w-4 h-4" strokeWidth={1.5} /> : <Search className="w-4 h-4" strokeWidth={1.5} />}
+              </button>
+
               <button
                 onClick={onToggleDarkMode}
                 className="w-9 h-9 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-[#622569] dark:hover:text-purple-300 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
@@ -225,6 +235,22 @@ export const Navbar: React.FC<NavbarProps> = ({
               )}
             </div>
           </div>
+
+          {mobileSearchOpen && (
+            <div className="md:hidden px-3 sm:px-5 pb-3 pt-1">
+              <div className="flex items-center relative">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3.5 pointer-events-none" strokeWidth={1.5} />
+                <input
+                  type="text"
+                  autoFocus
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search members, projects, events..."
+                  className="w-full bg-black/[0.03] dark:bg-white/[0.05] text-slate-900 dark:text-slate-100 text-xs pl-9 pr-4 py-2.5 rounded-full outline-none transition-all focus:bg-black/[0.05] dark:focus:bg-white/[0.08]"
+                />
+              </div>
+            </div>
+          )}
         </div>
       </header>
 
