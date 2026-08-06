@@ -60,6 +60,8 @@ export const EventsView: React.FC<EventsViewProps> = ({
       !searchQuery ||
       evt.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       evt.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      evt.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      evt.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
       evt.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesCat && matchesTimeline && matchesSearch;
   });

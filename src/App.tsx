@@ -72,6 +72,50 @@ export default function App() {
     });
   };
 
+  // Global search: matches across every entity type, not just the active tab's list
+  const searchResults = React.useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
+    const results: { id: string; tab: string; category: string; title: string; subtitle: string }[] = [];
+
+    events.forEach(e => {
+      if (e.title.toLowerCase().includes(q) || e.description.toLowerCase().includes(q) || e.category.toLowerCase().includes(q) || e.location.toLowerCase().includes(q) || e.tags.some(t => t.toLowerCase().includes(q))) {
+        results.push({ id: e.id, tab: 'events', category: 'Event', title: e.title, subtitle: e.category });
+      }
+    });
+    projects.forEach(p => {
+      if (p.title.toLowerCase().includes(q) || p.tagline.toLowerCase().includes(q) || p.description.toLowerCase().includes(q) || p.domain.toLowerCase().includes(q) || p.authorName.toLowerCase().includes(q) || p.tags.some(t => t.toLowerCase().includes(q))) {
+        results.push({ id: p.id, tab: 'projects', category: 'Project', title: p.title, subtitle: p.domain });
+      }
+    });
+    opportunities.forEach(o => {
+      if (o.title.toLowerCase().includes(q) || o.companyOrOrg.toLowerCase().includes(q) || o.description.toLowerCase().includes(q) || o.type.toLowerCase().includes(q) || o.tags.some(t => t.toLowerCase().includes(q))) {
+        results.push({ id: o.id, tab: 'opportunities', category: 'Opportunity', title: o.title, subtitle: o.companyOrOrg });
+      }
+    });
+    resources.forEach(r => {
+      if (r.title.toLowerCase().includes(q) || r.description.toLowerCase().includes(q) || r.authorOrProvider.toLowerCase().includes(q) || r.category.toLowerCase().includes(q) || r.type.toLowerCase().includes(q) || r.tags.some(t => t.toLowerCase().includes(q))) {
+        results.push({ id: r.id, tab: 'resources', category: 'Resource', title: r.title, subtitle: r.category });
+      }
+    });
+    members.forEach(m => {
+      if (m.username.toLowerCase().includes(q) || m.email.toLowerCase().includes(q) || m.institution.toLowerCase().includes(q) || m.city.toLowerCase().includes(q) || (m.skills && m.skills.some(s => s.toLowerCase().includes(q)))) {
+        results.push({ id: m.id, tab: 'members', category: 'Member', title: m.username, subtitle: m.institution });
+      }
+    });
+    announcements.forEach(a => {
+      if (a.title.toLowerCase().includes(q) || a.content.toLowerCase().includes(q) || a.category.toLowerCase().includes(q)) {
+        results.push({ id: a.id, tab: 'announcements', category: 'Announcement', title: a.title, subtitle: a.category });
+      }
+    });
+
+    return results.slice(0, 20);
+  }, [searchQuery, events, projects, opportunities, resources, members, announcements]);
+
+  const handleSelectSearchResult = (tab: string) => {
+    setActiveTab(tab);
+  };
+
   // Fetch initial data
   const loadAppData = async () => {
     try {
@@ -464,6 +508,8 @@ export default function App() {
           onLogout={handleLogout}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
+          searchResults={searchResults}
+          onSelectSearchResult={handleSelectSearchResult}
           darkMode={darkMode}
           onToggleDarkMode={toggleDarkMode}
           notifications={notifications}

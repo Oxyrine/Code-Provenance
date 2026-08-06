@@ -58,6 +58,8 @@ export const ResourcesView: React.FC<ResourcesViewProps> = ({
       res.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       res.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
       res.authorOrProvider.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      res.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      res.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
       res.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesCat && matchesTimeline && matchesSearch;
   });

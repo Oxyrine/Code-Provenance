@@ -57,6 +57,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
       proj.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       proj.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
       proj.authorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      proj.domain.toLowerCase().includes(searchQuery.toLowerCase()) ||
       proj.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesDomain && matchesTimeline && matchesSearch;
   });

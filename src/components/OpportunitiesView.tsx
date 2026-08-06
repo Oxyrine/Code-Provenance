@@ -62,6 +62,7 @@ export const OpportunitiesView: React.FC<OpportunitiesViewProps> = ({
       opp.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       opp.companyOrOrg.toLowerCase().includes(searchQuery.toLowerCase()) ||
       opp.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      opp.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
       opp.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesType && matchesTimeline && matchesSearch;
   });

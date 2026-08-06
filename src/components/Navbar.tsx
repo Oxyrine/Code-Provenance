@@ -10,6 +10,14 @@ interface NotificationItem {
   timestamp: string;
 }
 
+export interface SearchResultItem {
+  id: string;
+  tab: string;
+  category: string;
+  title: string;
+  subtitle: string;
+}
+
 interface NavbarProps {
   user: User | null;
   activeTab: string;
@@ -17,6 +25,8 @@ interface NavbarProps {
   onLogout: () => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
+  searchResults: SearchResultItem[];
+  onSelectSearchResult: (tab: string) => void;
   darkMode: boolean;
   onToggleDarkMode: () => void;
   notifications: NotificationItem[];
@@ -40,6 +50,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onLogout,
   searchQuery,
   setSearchQuery,
+  searchResults,
+  onSelectSearchResult,
   darkMode,
   onToggleDarkMode,
   notifications,
@@ -48,6 +60,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const toggleNotifications = () => {
@@ -57,6 +70,46 @@ export const Navbar: React.FC<NavbarProps> = ({
       return next;
     });
   };
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setSearchOpen(value.trim().length > 0);
+  };
+
+  const handleSelectResult = (tab: string) => {
+    onSelectSearchResult(tab);
+    setSearchOpen(false);
+    setMobileSearchOpen(false);
+  };
+
+  const searchDropdown = (
+    <>
+      <div className="fixed inset-0 z-30" onClick={() => setSearchOpen(false)} />
+      <div className="absolute left-0 right-0 top-full mt-2 z-40 glass-shell">
+        <div className="glass-core p-2 max-h-80 overflow-y-auto">
+          {searchResults.length === 0 ? (
+            <p className="text-xs text-slate-400 dark:text-slate-500 italic px-3 py-4 text-center">No results for "{searchQuery}"</p>
+          ) : (
+            <div className="space-y-1">
+              {searchResults.map((r) => (
+                <button
+                  key={`${r.tab}-${r.id}`}
+                  onClick={() => handleSelectResult(r.tab)}
+                  className="w-full flex items-center justify-between gap-2 text-left px-3 py-2 rounded-xl hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"
+                >
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate">{r.title}</p>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate">{r.subtitle}</p>
+                  </div>
+                  <span className="eyebrow bg-black/[0.04] dark:bg-white/[0.06] text-slate-500 dark:text-slate-400 shrink-0">{r.category}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
 
   const mobileNavItems = user?.role === 'admin'
     ? [...baseMobileNavItems, { id: 'admin', label: 'Admin Panel' }]
@@ -119,10 +172,12 @@ export const Navbar: React.FC<NavbarProps> = ({
               <input
                 type="text"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                onFocus={() => setSearchOpen(searchQuery.trim().length > 0)}
                 placeholder="Search members, projects, events..."
                 className="w-full bg-black/[0.03] dark:bg-white/[0.05] text-slate-900 dark:text-slate-100 text-xs pl-9 pr-4 py-2 rounded-full outline-none transition-all focus:bg-black/[0.05] dark:focus:bg-white/[0.08]"
               />
+              {searchOpen && searchDropdown}
             </div>
 
             {/* User Actions */}
@@ -244,10 +299,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                   type="text"
                   autoFocus
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                  onFocus={() => setSearchOpen(searchQuery.trim().length > 0)}
                   placeholder="Search members, projects, events..."
                   className="w-full bg-black/[0.03] dark:bg-white/[0.05] text-slate-900 dark:text-slate-100 text-xs pl-9 pr-4 py-2.5 rounded-full outline-none transition-all focus:bg-black/[0.05] dark:focus:bg-white/[0.08]"
                 />
+                {searchOpen && searchDropdown}
               </div>
             </div>
           )}
